@@ -29,11 +29,9 @@ const Login = () => {
     try {
       const response = await authAPI.login(formData);
       
-      // Store token and user data
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      // Redirect to dashboard
       navigate('/dashboard');
     } catch (error) {
       setError(error.response?.data?.error || 'Login failed. Please try again.');
@@ -50,7 +48,7 @@ const Login = () => {
             <FiCloud />
             <span>SkyCrate</span>
           </div>
-          <h1>Welcome Back</h1>
+          <h1>Welcome back</h1>
           <p>Sign in to access your cloud storage</p>
         </div>
 

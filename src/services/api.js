@@ -23,11 +23,31 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+    const status = error.response?.status;
+    const message = error.response?.data?.error || '';
+
+    // Unauthorized or invalid token -> clear and redirect to login
+    if (status === 401 || status === 403) {
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        window.location.href = '/login';
+      }
+      return; // stop further handling
     }
+
+    // Bucket deleted/missing cases from server -> clear and redirect to register
+    if (status === 404 && /bucket/i.test(message)) {
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        window.location.href = '/register';
+      }
+      return;
+    }
+
     return Promise.reject(error);
   }
 );
@@ -56,9 +76,12 @@ export const authAPI = {
 // File management API
 export const fileAPI = {
   // Upload file
-  uploadFile: async (file, onUploadProgress) => {
+  uploadFile: async (file, onUploadProgress, parentFolderId = null) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (parentFolderId) {
+      formData.append('parentFolderId', parentFolderId);
+    }
 
     const response = await api.post('/files/upload', formData, {
       headers: {
@@ -70,8 +93,9 @@ export const fileAPI = {
   },
 
   // Get user files
-  getFiles: async () => {
-    const response = await api.get('/files');
+  getFiles: async (folderId = null) => {
+    const params = folderId ? { folderId } : {};
+    const response = await api.get('/files', { params });
     return response.data;
   },
 
@@ -81,9 +105,36 @@ export const fileAPI = {
     return response.data;
   },
 
+  // Bulk delete files/folders
+  bulkDelete: async (fileIds) => {
+    const response = await api.delete('/files/bulk', { data: { fileIds } });
+    return response.data;
+  },
+
   // Toggle star file
   toggleStar: async (fileId, isStarred) => {
     const response = await api.patch(`/files/${fileId}/star`, { isStarred });
+    return response.data;
+  },
+};
+
+// Folder management API
+export const folderAPI = {
+  // Create folder
+  createFolder: async (folderName, parentFolderId = null) => {
+    const response = await api.post('/folders', { folderName, parentFolderId });
+    return response.data;
+  },
+
+  // Get folders
+  getFolders: async () => {
+    const response = await api.get('/folders');
+    return response.data;
+  },
+
+  // Delete folder
+  deleteFolder: async (folderId) => {
+    const response = await api.delete(`/folders/${folderId}`);
     return response.data;
   },
 };

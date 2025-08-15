@@ -71,7 +71,7 @@ const Register = () => {
             <FiCloud />
             <span>SkyCrate</span>
           </div>
-          <h1>Create Account</h1>
+          <h1>Create account</h1>
           <p>Join SkyCrate and get your personal cloud storage</p>
         </div>
 

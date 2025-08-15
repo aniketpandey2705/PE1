@@ -4,6 +4,7 @@ import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
+import { ThemeProvider } from './contexts/ThemeContext';
 import './App.css';
 
 // Protected Route Component
@@ -20,16 +21,18 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-          <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        </Routes>
-      </div>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 

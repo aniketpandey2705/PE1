@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { 
@@ -23,9 +23,15 @@ import {
   FiX,
   FiPlus,
   FiLogOut,
-  FiMoreVertical
+  FiMoreVertical,
+  FiFolderPlus,
+  FiClock,
+  FiHardDrive,
+  FiSun,
+  FiMoon
 } from 'react-icons/fi';
-import { fileAPI } from '../services/api';
+import { useTheme } from '../contexts/ThemeContext';
+import { fileAPI, folderAPI } from '../services/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -37,10 +43,16 @@ const Dashboard = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [folderPath, setFolderPath] = useState([]);
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [currentView, setCurrentView] = useState('files'); // 'files' or 'starred'
   const navigate = useNavigate();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   useEffect(() => {
-    // Check if user is authenticated
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
@@ -53,10 +65,10 @@ const Dashboard = () => {
     fetchFiles();
   }, [navigate]);
 
-  const fetchFiles = async () => {
+  const fetchFiles = async (folderId = null) => {
     try {
       setLoading(true);
-      const filesData = await fileAPI.getFiles();
+      const filesData = await fileAPI.getFiles(folderId);
       setFiles(filesData);
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -74,12 +86,9 @@ const Dashboard = () => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
-          // You can add progress tracking here if needed
         };
 
-        const response = await fileAPI.uploadFile(file, onUploadProgress);
-        
-        // Add the new file to the files list
+        const response = await fileAPI.uploadFile(file, onUploadProgress, currentFolderId);
         setFiles(prev => [response.file, ...prev]);
       }
     } catch (error) {
@@ -116,12 +125,32 @@ const Dashboard = () => {
 
   const removeFile = async (fileId) => {
     try {
-      await fileAPI.deleteFile(fileId);
+      const item = files.find(f => f.id === fileId);
+      if (!item) {
+        alert('Item not found.');
+        return;
+      }
+      
+      if (item.isFolder) {
+        await folderAPI.deleteFolder(fileId);
+      } else {
+        await fileAPI.deleteFile(fileId);
+      }
+      
+      // Update local state
       setFiles(prev => prev.filter(f => f.id !== fileId));
       setSelectedFiles(prev => prev.filter(id => id !== fileId));
+      
+      // Refresh file list to ensure consistency
+      await fetchFiles(currentFolderId);
+      
     } catch (error) {
       console.error('Delete error:', error);
-      alert('Failed to delete file. Please try again.');
+      if (error.response?.status === 400 && error.response?.data?.error?.includes('contents')) {
+        alert('Cannot delete folder with contents. Please empty the folder first.');
+      } else {
+        alert('Failed to delete item. Please try again.');
+      }
     }
   };
 
@@ -138,11 +167,79 @@ const Dashboard = () => {
   };
 
   const toggleFileSelection = (fileId) => {
-    setSelectedFiles(prev => 
-      prev.includes(fileId) 
+    setSelectedFiles(prev =>
+      prev.includes(fileId)
         ? prev.filter(id => id !== fileId)
         : [...prev, fileId]
     );
+  };
+
+  // Bulk actions
+  const bulkDownload = () => {
+    selectedFiles.forEach((id) => {
+      const f = files.find((x) => x.id === id);
+      if (f && !f.isFolder) {
+        downloadFile(f);
+      }
+    });
+    
+    const folderCount = selectedFiles.filter(id => {
+      const f = files.find(x => x.id === id);
+      return f?.isFolder;
+    }).length;
+    
+    if (folderCount > 0) {
+      alert(`${folderCount} folder(s) cannot be downloaded. Only files were downloaded.`);
+    }
+  };
+
+  const bulkShare = async () => {
+    const shareableFiles = selectedFiles
+      .map((id) => files.find((x) => x.id === id))
+      .filter(Boolean)
+      .filter(f => !f.isFolder); // Only share files, not folders
+    
+    const urls = shareableFiles.map((f) => f.url).join('\n');
+    
+    if (urls) {
+      await navigator.clipboard.writeText(urls);
+      alert(`Copied ${shareableFiles.length} file link(s) to clipboard!`);
+    } else {
+      alert('No files selected for sharing. Folders cannot be shared directly.');
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedFiles.length} selected item(s)?`)) return;
+    
+    try {
+      console.log('Starting bulk delete for:', selectedFiles);
+      
+      // Use the new bulk delete API
+      const response = await fileAPI.bulkDelete(selectedFiles);
+      
+      console.log('Bulk delete response:', response);
+      
+      if (response.failureCount > 0) {
+        const failedItems = response.results.filter(r => !r.success);
+        const errorMessages = failedItems.map(item => item.error).join(', ');
+        alert(`${response.successCount} item(s) deleted successfully. ${response.failureCount} item(s) failed: ${errorMessages}`);
+      } else {
+        console.log(`Successfully deleted ${response.successCount} item(s)`);
+      }
+      
+      // Clear selection
+      setSelectedFiles([]);
+      
+      // Refresh the file list to ensure consistency
+      await fetchFiles(currentFolderId);
+      
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      alert('Failed to delete items. Please try again.');
+      // Clear selection even on error to prevent stuck state
+      setSelectedFiles([]);
+    }
   };
 
   const handleLogout = () => {
@@ -161,13 +258,74 @@ const Dashboard = () => {
   };
 
   const shareFile = (file) => {
+    if (file.isFolder) {
+      alert('Cannot share folders directly');
+      return;
+    }
     navigator.clipboard.writeText(file.url);
     alert('File URL copied to clipboard!');
   };
 
-  const filteredFiles = files.filter(file => 
-    file.originalName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const createFolder = async () => {
+    if (!newFolderName.trim()) {
+      alert('Please enter a folder name');
+      return;
+    }
+
+    try {
+      const response = await folderAPI.createFolder(newFolderName.trim(), currentFolderId);
+      setFiles(prev => [response.folder, ...prev]);
+      setNewFolderName('');
+      setShowCreateFolder(false);
+    } catch (error) {
+      console.error('Create folder error:', error);
+      alert(error.response?.data?.error || 'Failed to create folder');
+    }
+  };
+
+  const openFolder = (folder) => {
+    setCurrentFolderId(folder.id);
+    setFolderPath(prev => [...prev, { id: folder.id, name: folder.folderName }]);
+    fetchFiles(folder.id);
+  };
+
+  const navigateToFolder = (folderId, index) => {
+    if (folderId === null) {
+      // Navigate to root
+      setCurrentFolderId(null);
+      setFolderPath([]);
+      fetchFiles(null);
+    } else {
+      // Navigate to specific folder
+      setCurrentFolderId(folderId);
+      setFolderPath(prev => prev.slice(0, index + 1));
+      fetchFiles(folderId);
+    }
+  };
+
+  const getItemIcon = (item) => {
+    if (item.isFolder) return <FiFolder />;
+    return getFileIcon(item.fileType);
+  };
+
+  const filteredFiles = useMemo(() => {
+    let filtered = files;
+    
+    // Filter by current view (starred or all files)
+    if (currentView === 'starred') {
+      filtered = files.filter(item => item.isStarred);
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(item => {
+        const name = item.isFolder ? item.folderName : item.originalName;
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+      });
+    }
+    
+    return filtered;
+  }, [files, searchQuery, currentView]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -199,7 +357,7 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       {/* Sidebar */}
-      <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <FiFolder />
@@ -218,17 +376,31 @@ const Dashboard = () => {
             <FiHome />
             <span>Home</span>
           </Link>
-          <div className="nav-item active">
+          <div
+            className={`nav-item ${currentView === 'files' ? 'active' : ''}`}
+            onClick={() => setCurrentView('files')}
+          >
             <FiFolder />
             <span>My Files</span>
           </div>
-          <div className="nav-item">
+          <div
+            className={`nav-item ${currentView === 'starred' ? 'active' : ''}`}
+            onClick={() => setCurrentView('starred')}
+          >
             <FiStar />
             <span>Starred</span>
           </div>
           <div className="nav-item">
             <FiShare2 />
             <span>Shared</span>
+          </div>
+          <div className="nav-item">
+            <FiClock />
+            <span>Recent</span>
+          </div>
+          <div className="nav-item">
+            <FiHardDrive />
+            <span>Storage</span>
           </div>
           <div className="nav-item">
             <FiSettings />
@@ -251,10 +423,10 @@ const Dashboard = () => {
             <span>Logout</span>
           </button>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div className="main-content">
+      <main className="main-content">
         {/* Header */}
         <header className="dashboard-header">
           <div className="header-left">
@@ -290,137 +462,255 @@ const Dashboard = () => {
                 <FiList />
               </button>
             </div>
-            <button className="btn btn-primary">
-              <FiPlus />
-              New Folder
+            <button 
+              className="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
+            >
+              {isDark ? <FiSun /> : <FiMoon />}
             </button>
+            {currentView === 'files' && (
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowCreateFolder(true)}
+              >
+                <FiFolderPlus />
+                New Folder
+              </button>
+            )}
           </div>
         </header>
 
-        {/* Upload Area */}
-        <div className="upload-section">
-          <div 
-            {...getRootProps()} 
-            className={`upload-area ${isDragActive ? 'active' : ''}`}
-          >
-            <input {...getInputProps()} />
-            <FiUpload className="upload-icon" />
-            {isDragActive ? (
-              <p>Drop files here to upload</p>
+        {/* Content Area */}
+        <div className="content-area">
+          {/* Breadcrumb Navigation - Only show in files view */}
+          {currentView === 'files' && folderPath.length > 0 && (
+            <div className="breadcrumb">
+              <button
+                className="breadcrumb-item"
+                onClick={() => navigateToFolder(null, -1)}
+              >
+                <FiHome /> Home
+              </button>
+              {folderPath.map((folder, index) => (
+                <React.Fragment key={folder.id}>
+                  <span className="breadcrumb-separator">/</span>
+                  <button
+                    className="breadcrumb-item"
+                    onClick={() => navigateToFolder(folder.id, index)}
+                  >
+                    {folder.name}
+                  </button>
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+
+          {/* Upload Area - Only show in files view */}
+          {currentView === 'files' && (
+            <div className="upload-section">
+              <div
+                {...getRootProps()}
+                className={`upload-area ${isDragActive ? 'active' : ''}`}
+              >
+                <input {...getInputProps()} />
+                <FiUpload className="upload-icon" />
+                {isDragActive ? (
+                  <p>Drop files here to upload</p>
+                ) : (
+                  <div>
+                    <p>Drag and drop files here, or click to select files</p>
+                    <button className="btn btn-secondary">Choose Files</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Files Section */}
+          <div className="files-section">
+            <div className="files-header">
+              <div className="files-title">
+                <h2>{currentView === 'starred' ? 'Starred Files' : 'My Files'}</h2>
+                <span className="file-count">({filteredFiles.length} items)</span>
+              </div>
+              <div className="files-actions">
+                {selectedFiles.length > 0 && (
+                  <>
+                    <button className="btn btn-secondary btn-sm" onClick={bulkDownload}>
+                      <FiDownload />
+                      Download ({selectedFiles.length})
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={bulkShare}>
+                      <FiShare2 />
+                      Share ({selectedFiles.length})
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={bulkDelete}>
+                      <FiTrash2 />
+                      Delete ({selectedFiles.length})
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {currentView === 'starred' && filteredFiles.length === 0 ? (
+              <div className="empty-state">
+                <FiStar className="empty-icon" />
+                <h3>No starred files</h3>
+                <p>Star your favorite files to see them here</p>
+              </div>
+            ) : files.length === 0 ? (
+              <div className="empty-state">
+                <FiFolder className="empty-icon" />
+                <h3>No files yet</h3>
+                <p>Upload your first file or create a folder to get started</p>
+              </div>
+            ) : filteredFiles.length === 0 ? (
+              <div className="empty-state">
+                <FiSearch className="empty-icon" />
+                <h3>No files found</h3>
+                <p>Try adjusting your search terms</p>
+              </div>
             ) : (
-              <div>
-                <p>Drag and drop files here, or click to select files</p>
-                <button className="btn btn-secondary">Choose Files</button>
+              <div className={`files-grid ${viewMode}`}>
+                {filteredFiles.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`file-item ${selectedFiles.includes(item.id) ? 'selected' : ''} ${item.isFolder ? 'folder-item' : ''}`}
+                    onClick={() => item.isFolder ? openFolder(item) : toggleFileSelection(item.id)}
+                    onDoubleClick={() => item.isFolder ? openFolder(item) : null}
+                  >
+                    <div className="file-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedFiles.includes(item.id)}
+                        onChange={() => toggleFileSelection(item.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    
+                    <div className="file-icon">
+                      {getItemIcon(item)}
+                    </div>
+                    
+                    <div className="file-info">
+                      <div className="file-name">
+                        {item.isFolder ? item.folderName : item.originalName}
+                      </div>
+                      <div className="file-meta">
+                        {item.isFolder ? (
+                          <span className="file-type">Folder</span>
+                        ) : (
+                          <>
+                            <span className="file-size">{formatFileSize(item.fileSize)}</span>
+                            <span className="file-date">{formatDate(item.uploadDate)}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="file-actions">
+                      {!item.isFolder && (
+                        <button
+                          className={`star-btn ${item.isStarred ? 'starred' : ''}`}
+                          aria-label={`${item.isStarred ? 'Unstar' : 'Star'} ${item.originalName}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleStar(item.id, item.isStarred);
+                          }}
+                        >
+                          <FiStar />
+                        </button>
+                      )}
+                      {!item.isFolder && (
+                        <button
+                          className="action-btn"
+                          aria-label={`Download ${item.originalName}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadFile(item);
+                          }}
+                        >
+                          <FiDownload />
+                        </button>
+                      )}
+                      <button
+                        className="action-btn"
+                        aria-label={`${item.isFolder ? 'Share folder' : 'Copy link for'} ${item.isFolder ? item.folderName : item.originalName}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          shareFile(item);
+                        }}
+                      >
+                        <FiShare2 />
+                      </button>
+                      <button
+                        className="action-btn"
+                        aria-label={`Delete ${item.isFolder ? item.folderName : item.originalName}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(item.id);
+                        }}
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
+      </main>
 
-        {/* Files Section */}
-        <div className="files-section">
-          <div className="files-header">
-            <h2>My Files ({files.length})</h2>
-            <div className="files-actions">
-              {selectedFiles.length > 0 && (
-                <>
-                  <button className="btn btn-secondary">
-                    <FiDownload />
-                    Download ({selectedFiles.length})
-                  </button>
-                  <button className="btn btn-secondary">
-                    <FiShare2 />
-                    Share ({selectedFiles.length})
-                  </button>
-                  <button className="btn btn-secondary">
-                    <FiTrash2 />
-                    Delete ({selectedFiles.length})
-                  </button>
-                </>
-              )}
+      {/* Create Folder Modal */}
+      {showCreateFolder && (
+        <div className="modal-overlay" onClick={() => setShowCreateFolder(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Create New Folder</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowCreateFolder(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label htmlFor="folderName">Folder Name</label>
+                <input
+                  id="folderName"
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Enter folder name"
+                  onKeyPress={(e) => e.key === 'Enter' && createFolder()}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowCreateFolder(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={createFolder}
+                disabled={!newFolderName.trim()}
+              >
+                Create Folder
+              </button>
             </div>
           </div>
-
-          {files.length === 0 ? (
-            <div className="empty-state">
-              <FiFolder className="empty-icon" />
-              <h3>No files yet</h3>
-              <p>Upload your first file to get started</p>
-            </div>
-          ) : (
-            <div className={`files-grid ${viewMode}`}>
-              {filteredFiles.map((file) => (
-                <div 
-                  key={file.id} 
-                  className={`file-item ${selectedFiles.includes(file.id) ? 'selected' : ''}`}
-                  onClick={() => toggleFileSelection(file.id)}
-                >
-                  <div className="file-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={selectedFiles.includes(file.id)}
-                      onChange={() => toggleFileSelection(file.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  
-                  <div className="file-icon">
-                    {getFileIcon(file.fileType)}
-                  </div>
-                  
-                  <div className="file-info">
-                    <div className="file-name">{file.originalName}</div>
-                    <div className="file-meta">
-                      <span className="file-size">{formatFileSize(file.fileSize)}</span>
-                      <span className="file-date">{formatDate(file.uploadDate)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="file-actions">
-                    <button 
-                      className={`star-btn ${file.isStarred ? 'starred' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleStar(file.id, file.isStarred);
-                      }}
-                    >
-                      <FiStar />
-                    </button>
-                    <button 
-                      className="action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        downloadFile(file);
-                      }}
-                    >
-                      <FiDownload />
-                    </button>
-                    <button 
-                      className="action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        shareFile(file);
-                      }}
-                    >
-                      <FiShare2 />
-                    </button>
-                    <button 
-                      className="action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFile(file.id);
-                      }}
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
