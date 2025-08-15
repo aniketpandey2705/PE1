@@ -25,6 +25,23 @@ A secure cloud file storage application built with React, Node.js, and AWS S3. U
 - AWS Account with S3 access
 - AWS IAM user with S3 permissions
 
+## New contributors setup
+
+To ensure a smooth onboarding experience and consistent Git behavior across platforms:
+
+- Windows users: this repo enforces LF line endings via `.gitattributes`. Configure Git to keep LF on commit:
+  ```bash
+  git config --global core.autocrlf input
+  ```
+  If you cloned the repo before this change and you see line-ending warnings, normalize your working tree once:
+  ```bash
+  git add --renormalize .
+  git commit -m "Normalize line endings to LF"
+  ```
+- macOS/Linux users: no action needed; LF is the default.
+
+Environment variables are provided in `env.example`. Copy it to `.env` and update the values before running locally.
+
 ## Installation
 
 1. **Clone the repository**
