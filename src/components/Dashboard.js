@@ -32,6 +32,7 @@ import {
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import { fileAPI, folderAPI } from '../services/api';
+import StorageClassModal from './StorageClassModal';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -49,6 +50,8 @@ const Dashboard = () => {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [currentView, setCurrentView] = useState('files'); // 'files' or 'starred'
+  const [showStorageClassModal, setShowStorageClassModal] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState([]);
   const navigate = useNavigate();
   const { theme, toggleTheme, isDark } = useTheme();
 
@@ -78,17 +81,28 @@ const Dashboard = () => {
   };
 
   const onDrop = async (acceptedFiles) => {
+    if (acceptedFiles.length === 1) {
+      // Single file - show storage class selection modal
+      setPendingFiles(acceptedFiles);
+      setShowStorageClassModal(true);
+    } else if (acceptedFiles.length > 1) {
+      // Multiple files - upload with default storage class
+      await uploadFiles(acceptedFiles);
+    }
+  };
+
+  const uploadFiles = async (filesToUpload, storageClass = null) => {
     setUploading(true);
     
     try {
-      for (const file of acceptedFiles) {
+      for (const file of filesToUpload) {
         const onUploadProgress = (progressEvent) => {
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
         };
 
-        const response = await fileAPI.uploadFile(file, onUploadProgress, currentFolderId);
+        const response = await fileAPI.uploadFile(file, onUploadProgress, currentFolderId, storageClass);
         setFiles(prev => [response.file, ...prev]);
       }
     } catch (error) {
@@ -97,6 +111,17 @@ const Dashboard = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleStorageClassSelect = async (storageClass) => {
+    setShowStorageClassModal(false);
+    await uploadFiles(pendingFiles, storageClass);
+    setPendingFiles([]);
+  };
+
+  const handleStorageClassCancel = () => {
+    setShowStorageClassModal(false);
+    setPendingFiles([]);
   };
 
   const getFileIcon = (fileType) => {
@@ -709,6 +734,15 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Storage Class Selection Modal */}
+      <StorageClassModal
+        isOpen={showStorageClassModal}
+        onClose={handleStorageClassCancel}
+        onSelect={handleStorageClassSelect}
+        file={pendingFiles[0]}
+        loading={uploading}
+      />
     </div>
   );
 };

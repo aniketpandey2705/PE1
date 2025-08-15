@@ -21,6 +21,9 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const AWS_REGION = process.env.AWS_REGION || 'us-east-1';
 const JWT_SECRET = process.env.JWT_SECRET;
 const DEV_MODE = process.env.DEV_MODE === 'true';
+const SHOW_STORAGE_CLASS_OPTIONS = process.env.SHOW_STORAGE_CLASS_OPTIONS === 'true';
+const SHOW_STORAGE_RECOMMENDATIONS = process.env.SHOW_STORAGE_RECOMMENDATIONS === 'true';
+const DEFAULT_STORAGE_CLASS = process.env.DEFAULT_STORAGE_CLASS || 'STANDARD';
 
 // Fail-fast on critical env
 if (!JWT_SECRET) {
@@ -185,6 +188,81 @@ const authenticateToken = async (req, res, next) => {
   } catch (error) {
     return res.status(403).json({ error: 'Invalid token' });
   }
+};
+
+// S3 Storage Class Helper Functions
+const getStorageClassRecommendation = (fileType, fileSize, fileName = '') => {
+  const sizeInMB = fileSize / (1024 * 1024);
+  const fileExtension = fileName.toLowerCase().split('.').pop() || '';
+  
+  // Get environment configuration
+  const largeFileThreshold = parseInt(process.env.RECOMMEND_STANDARD_IA_THRESHOLD_MB || '100', 10);
+  const glacierExtensions = (process.env.RECOMMEND_GLACIER_EXTENSIONS || '.zip,.rar,.tar,.gz,.7z,.bz2').split(',');
+  const glacierIRExtensions = (process.env.RECOMMEND_GLACIER_IR_EXTENSIONS || '.bak,.backup,.sql,.dump').split(',');
+  const standardExtensions = (process.env.RECOMMEND_STANDARD_EXTENSIONS || '.jpg,.jpeg,.png,.gif,.mp4,.avi,.pdf,.doc,.docx').split(',');
+  
+  // Large files (>threshold MB) - recommend Standard-IA for cost optimization
+  if (sizeInMB > largeFileThreshold) {
+    return {
+      recommended: 'STANDARD_IA',
+      reason: `Large file (${Math.round(sizeInMB)}MB) - Save 46% with Standard-IA`,
+      savings: '46% cost savings compared to Standard'
+    };
+  }
+  
+  // Archive files - recommend Glacier for long-term storage
+  if (glacierExtensions.some(ext => fileExtension === ext.replace('.', '') || fileType.includes(ext.replace('.', '')))) {
+    return {
+      recommended: 'GLACIER',
+      reason: 'Archive file - Ideal for long-term storage',
+      savings: '84% cost savings compared to Standard'
+    };
+  }
+  
+  // Backup files - recommend Glacier Instant Retrieval
+  if (glacierIRExtensions.some(ext => fileExtension === ext.replace('.', '') || fileName.toLowerCase().includes(ext.replace('.', '')))) {
+    return {
+      recommended: 'GLACIER_IR',
+      reason: 'Backup file - Instant retrieval with low cost',
+      savings: '83% cost savings compared to Standard'
+    };
+  }
+  
+  // Frequently accessed files - recommend Standard
+  if (standardExtensions.some(ext => fileExtension === ext.replace('.', '')) ||
+      fileType.startsWith('image/') || fileType.startsWith('video/') || fileType === 'application/pdf') {
+    return {
+      recommended: 'STANDARD',
+      reason: 'Frequently accessed file - Best performance',
+      savings: 'Optimized for frequent access'
+    };
+  }
+  
+  // Default to Standard for other files
+  return {
+    recommended: 'STANDARD',
+    reason: 'General purpose file',
+    savings: 'Standard performance and availability'
+  };
+};
+
+// Legacy function for backward compatibility
+const getOptimalStorageClass = (fileType, fileSize, fileName = '') => {
+  const recommendation = getStorageClassRecommendation(fileType, fileSize, fileName);
+  return recommendation.recommended;
+};
+
+const getStorageClassCost = (storageClass) => {
+  // Approximate monthly costs per GB (as of 2024)
+  const costs = {
+    'STANDARD': 0.023,
+    'STANDARD_IA': 0.0125,
+    'ONEZONE_IA': 0.01,
+    'GLACIER_IR': 0.004,
+    'GLACIER': 0.0036,
+    'DEEP_ARCHIVE': 0.00099
+  };
+  return costs[storageClass] || costs['STANDARD'];
 };
 
 // Multer configuration: memory storage with limits and MIME filter
@@ -373,7 +451,93 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Upload File
+// Get Storage Class Recommendations
+app.post('/api/storage/recommendations', authenticateToken, (req, res) => {
+  try {
+    const { fileName, fileType, fileSize } = req.body;
+    
+    if (!fileName || !fileType || !fileSize) {
+      return res.status(400).json({ error: 'fileName, fileType, and fileSize are required' });
+    }
+
+    // Get recommendation
+    const recommendation = getStorageClassRecommendation(fileType, fileSize, fileName);
+    
+    // Get all available storage classes with costs
+    const storageClasses = [
+      {
+        name: 'STANDARD',
+        displayName: 'Standard',
+        cost: 0.023,
+        description: 'Frequently accessed files, immediate retrieval',
+        retrievalTime: 'Immediate',
+        minimumDuration: 'None'
+      },
+      {
+        name: 'STANDARD_IA',
+        displayName: 'Standard-IA',
+        cost: 0.0125,
+        description: 'Infrequently accessed, immediate retrieval',
+        retrievalTime: 'Immediate',
+        minimumDuration: '30 days'
+      },
+      {
+        name: 'ONEZONE_IA',
+        displayName: 'One Zone-IA',
+        cost: 0.01,
+        description: 'Non-critical, infrequent access, immediate retrieval',
+        retrievalTime: 'Immediate',
+        minimumDuration: '30 days'
+      },
+      {
+        name: 'GLACIER_IR',
+        displayName: 'Glacier Instant Retrieval',
+        cost: 0.004,
+        description: 'Archive with instant retrieval',
+        retrievalTime: 'Immediate',
+        minimumDuration: '90 days'
+      },
+      {
+        name: 'GLACIER',
+        displayName: 'Glacier',
+        cost: 0.0036,
+        description: 'Long-term archive',
+        retrievalTime: '1-5 minutes',
+        minimumDuration: '90 days'
+      },
+      {
+        name: 'DEEP_ARCHIVE',
+        displayName: 'Deep Archive',
+        cost: 0.00099,
+        description: 'Long-term backup',
+        retrievalTime: '12 hours',
+        minimumDuration: '180 days'
+      }
+    ];
+
+    // Calculate estimated monthly costs for each storage class
+    const fileSizeGB = fileSize / (1024 * 1024 * 1024);
+    const storageClassesWithCosts = storageClasses.map(sc => ({
+      ...sc,
+      estimatedMonthlyCost: sc.cost * fileSizeGB,
+      savingsVsStandard: Math.round(((0.023 - sc.cost) / 0.023) * 100)
+    }));
+
+    res.json({
+      recommendation,
+      storageClasses: storageClassesWithCosts,
+      showOptions: SHOW_STORAGE_CLASS_OPTIONS,
+      showRecommendations: SHOW_STORAGE_RECOMMENDATIONS,
+      defaultStorageClass: DEFAULT_STORAGE_CLASS
+    });
+
+  } catch (error) {
+    console.error('Storage recommendations error:', error);
+    res.status(500).json({ error: 'Failed to get storage recommendations' });
+  }
+});
+
+// Upload File with Storage Class Selection
 app.post('/api/files/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -381,12 +545,27 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
     }
 
     const { originalname, buffer, mimetype, size } = req.file;
-    const { parentFolderId = null } = req.body;
+    const { parentFolderId = null, storageClass } = req.body;
     const fileName = `${Date.now()}-${originalname}`;
     
     // Build S3 key with folder path
     const folderPath = await buildFolderPath(parentFolderId, req.user.id);
     const s3Key = `uploads/${folderPath}${fileName}`;
+    
+    // Determine storage class to use
+    let selectedStorageClass;
+    if (storageClass && ['STANDARD', 'STANDARD_IA', 'ONEZONE_IA', 'GLACIER_IR', 'GLACIER', 'DEEP_ARCHIVE'].includes(storageClass)) {
+      selectedStorageClass = storageClass;
+    } else if (SHOW_STORAGE_CLASS_OPTIONS) {
+      // If storage class options are enabled but none provided, use default
+      selectedStorageClass = DEFAULT_STORAGE_CLASS;
+    } else {
+      // Use automatic optimization (legacy behavior)
+      selectedStorageClass = getOptimalStorageClass(mimetype, size, originalname);
+    }
+    
+    const estimatedMonthlyCost = getStorageClassCost(selectedStorageClass) * (size / (1024 * 1024 * 1024)); // Cost per GB
+    
     let signedUrl = '';
 
     if (!DEV_MODE) {
@@ -413,17 +592,21 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
         throw bucketError;
       }
 
-      // Upload to S3 with server-side encryption
+      // Upload to S3 with selected storage class
       const uploadParams = {
         Bucket: req.user.awsBucketName,
         Key: s3Key,
         Body: buffer,
         ContentType: mimetype,
+        StorageClass: selectedStorageClass,
         ServerSideEncryption: 'AES256'
       };
 
       const uploadCommand = new PutObjectCommand(uploadParams);
       await s3Client.send(uploadCommand);
+
+      console.log(`✅ File uploaded with storage class: ${selectedStorageClass}`);
+      console.log(`💰 Estimated monthly cost: $${estimatedMonthlyCost.toFixed(4)}`);
 
       // Generate pre-signed URL for download
       const getObjectCommand = new GetObjectCommand({
@@ -434,7 +617,7 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
     } else {
       // DEV_MODE: Generate a fake URL for testing
       signedUrl = `http://localhost:${PORT}/dev/file/${fileName}`;
-      console.log(`DEV_MODE: Simulating file upload for ${originalname}`);
+      console.log(`DEV_MODE: Simulating file upload for ${originalname} with storage class: ${selectedStorageClass}`);
     }
 
     // Save file info to storage
@@ -451,6 +634,8 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
       fileType: mimetype,
       s3Key: s3Key,
       bucketName: req.user.awsBucketName,
+      storageClass: selectedStorageClass,
+      estimatedMonthlyCost: estimatedMonthlyCost,
       uploadDate: new Date().toISOString(),
       isStarred: false,
       isFolder: false,
@@ -477,6 +662,8 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
         originalName: newFile.originalName,
         fileSize: newFile.fileSize,
         fileType: newFile.fileType,
+        storageClass: newFile.storageClass,
+        estimatedMonthlyCost: newFile.estimatedMonthlyCost,
         uploadDate: newFile.uploadDate,
         url: signedUrl
       }
@@ -544,6 +731,8 @@ app.get('/api/files', authenticateToken, async (req, res) => {
             originalName: file.originalName,
             fileSize: file.fileSize,
             fileType: file.fileType,
+            storageClass: file.storageClass || 'STANDARD',
+            estimatedMonthlyCost: file.estimatedMonthlyCost || 0,
             uploadDate: file.uploadDate,
             isStarred: file.isStarred,
             isFolder: file.isFolder,
@@ -573,6 +762,8 @@ app.get('/api/files', authenticateToken, async (req, res) => {
             originalName: file.originalName,
             fileSize: file.fileSize,
             fileType: file.fileType,
+            storageClass: file.storageClass || 'STANDARD',
+            estimatedMonthlyCost: file.estimatedMonthlyCost || 0,
             uploadDate: file.uploadDate,
             isStarred: file.isStarred,
             isFolder: file.isFolder,
@@ -587,6 +778,50 @@ app.get('/api/files', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get files error:', error);
     res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+// Get Storage Cost Analysis
+app.get('/api/storage/cost-analysis', authenticateToken, async (req, res) => {
+  try {
+    const files = await readFiles();
+    const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
+
+    const analysis = {
+      totalFiles: userFiles.length,
+      totalSize: userFiles.reduce((sum, file) => sum + (file.fileSize || 0), 0),
+      totalMonthlyCost: userFiles.reduce((sum, file) => sum + (file.estimatedMonthlyCost || 0), 0),
+      storageClassBreakdown: {},
+      recommendations: []
+    };
+
+    // Group by storage class
+    userFiles.forEach(file => {
+      const storageClass = file.storageClass || 'STANDARD';
+      if (!analysis.storageClassBreakdown[storageClass]) {
+        analysis.storageClassBreakdown[storageClass] = {
+          count: 0,
+          totalSize: 0,
+          totalCost: 0
+        };
+      }
+      analysis.storageClassBreakdown[storageClass].count++;
+      analysis.storageClassBreakdown[storageClass].totalSize += file.fileSize || 0;
+      analysis.storageClassBreakdown[storageClass].totalCost += file.estimatedMonthlyCost || 0;
+    });
+
+    // Generate recommendations
+    if (analysis.totalMonthlyCost > 10) {
+      analysis.recommendations.push('Consider moving large, infrequently accessed files to Glacier storage class');
+    }
+    if (analysis.storageClassBreakdown['STANDARD']?.totalSize > 1024 * 1024 * 1024) { // 1GB
+      analysis.recommendations.push('Large files in Standard storage could be moved to Standard-IA for cost savings');
+    }
+
+    res.json(analysis);
+  } catch (error) {
+    console.error('Cost analysis error:', error);
+    res.status(500).json({ error: 'Failed to generate cost analysis' });
   }
 });
 

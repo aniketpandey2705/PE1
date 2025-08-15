@@ -75,12 +75,25 @@ export const authAPI = {
 
 // File management API
 export const fileAPI = {
-  // Upload file
-  uploadFile: async (file, onUploadProgress, parentFolderId = null) => {
+  // Get storage class recommendations
+  getStorageRecommendations: async (fileName, fileType, fileSize) => {
+    const response = await api.post('/storage/recommendations', {
+      fileName,
+      fileType,
+      fileSize
+    });
+    return response.data;
+  },
+
+  // Upload file with optional storage class
+  uploadFile: async (file, onUploadProgress, parentFolderId = null, storageClass = null) => {
     const formData = new FormData();
     formData.append('file', file);
     if (parentFolderId) {
       formData.append('parentFolderId', parentFolderId);
+    }
+    if (storageClass) {
+      formData.append('storageClass', storageClass);
     }
 
     const response = await api.post('/files/upload', formData, {
