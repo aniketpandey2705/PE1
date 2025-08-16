@@ -71,6 +71,12 @@ export const authAPI = {
     const response = await api.get('/user/profile');
     return response.data;
   },
+
+  // Delete account and associated S3 bucket
+  deleteAccount: async () => {
+    const response = await api.delete('/auth/account');
+    return response.data;
+  },
 };
 
 // File management API
@@ -109,6 +115,12 @@ export const fileAPI = {
   getFiles: async (folderId = null) => {
     const params = folderId ? { folderId } : {};
     const response = await api.get('/files', { params });
+    return response.data;
+  },
+
+  // Get storage statistics
+  getStorageStats: async () => {
+    const response = await api.get('/storage/stats');
     return response.data;
   },
 

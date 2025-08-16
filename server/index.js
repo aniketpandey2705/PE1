@@ -451,6 +451,61 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Delete Account and S3 Bucket
+app.delete('/api/auth/account', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bucketName = req.user.awsBucketName;
+    console.log(`⚠️  Deleting account for user: ${userId} (bucket: ${bucketName})`);
+
+    // 1. Delete all user files from files.json
+    const files = await readFiles();
+    const updatedFiles = files.filter(f => f.userId !== userId);
+    await writeFiles(updatedFiles);
+    console.log(`🗑️  Deleted all files for user: ${userId}`);
+
+    // 2. Remove user from users.json
+    const users = await readUsers();
+    const updatedUsers = users.filter(u => u.id !== userId);
+    await writeUsers(updatedUsers);
+    console.log(`🗑️  Deleted user from users.json: ${userId}`);
+
+    // 3. Delete S3 bucket (skip in DEV_MODE)
+    if (!DEV_MODE) {
+      try {
+        // List and delete all objects in the bucket
+        const { ListObjectsV2Command, DeleteObjectsCommand, DeleteBucketCommand } = require('@aws-sdk/client-s3');
+        // List all objects
+        const listCommand = new ListObjectsV2Command({ Bucket: bucketName });
+        const listedObjects = await s3Client.send(listCommand);
+        if (listedObjects.Contents && listedObjects.Contents.length > 0) {
+          const deleteParams = {
+            Bucket: bucketName,
+            Delete: { Objects: listedObjects.Contents.map(obj => ({ Key: obj.Key })) }
+          };
+          const deleteCommand = new DeleteObjectsCommand(deleteParams);
+          await s3Client.send(deleteCommand);
+          console.log(`🗑️  Deleted all objects in bucket: ${bucketName}`);
+        }
+        // Delete the bucket
+        const deleteBucketCommand = new DeleteBucketCommand({ Bucket: bucketName });
+        await s3Client.send(deleteBucketCommand);
+        console.log(`🪣 Deleted S3 bucket: ${bucketName}`);
+      } catch (err) {
+        console.error('Error deleting S3 bucket:', err);
+        // Continue even if S3 deletion fails
+      }
+    } else {
+      console.log(`DEV_MODE: Skipping S3 bucket deletion for user ${userId}`);
+    }
+
+    res.json({ message: 'Account and bucket deleted successfully.' });
+  } catch (err) {
+    console.error('Delete account error:', err);
+    res.status(500).json({ error: 'Failed to delete account.' });
+  }
+});
+
 // Get Storage Class Recommendations
 app.post('/api/storage/recommendations', authenticateToken, (req, res) => {
   try {
@@ -822,6 +877,73 @@ app.get('/api/storage/cost-analysis', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Cost analysis error:', error);
     res.status(500).json({ error: 'Failed to generate cost analysis' });
+  }
+});
+
+// Get Storage Statistics
+app.get('/api/storage/stats', authenticateToken, async (req, res) => {
+  try {
+    const files = await readFiles();
+    const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
+
+    const stats = {
+      totalFiles: userFiles.length,
+      totalSize: userFiles.reduce((sum, file) => sum + (file.fileSize || 0), 0),
+      totalMonthlyCost: userFiles.reduce((sum, file) => sum + (file.estimatedMonthlyCost || 0), 0),
+      storageClassBreakdown: {},
+      fileTypeBreakdown: {},
+      sizeBreakdown: {
+        small: 0,    // < 1MB
+        medium: 0,   // 1MB - 100MB
+        large: 0,    // 100MB - 1GB
+        huge: 0      // > 1GB
+      }
+    };
+
+    // Group by storage class and file type
+    userFiles.forEach(file => {
+      const storageClass = file.storageClass || 'STANDARD';
+      const fileType = file.fileType || 'unknown';
+      const fileSize = file.fileSize || 0;
+
+      // Storage class breakdown
+      if (!stats.storageClassBreakdown[storageClass]) {
+        stats.storageClassBreakdown[storageClass] = {
+          count: 0,
+          totalSize: 0,
+          totalCost: 0
+        };
+      }
+      stats.storageClassBreakdown[storageClass].count++;
+      stats.storageClassBreakdown[storageClass].totalSize += fileSize;
+      stats.storageClassBreakdown[storageClass].totalCost += file.estimatedMonthlyCost || 0;
+
+      // File type breakdown
+      if (!stats.fileTypeBreakdown[fileType]) {
+        stats.fileTypeBreakdown[fileType] = {
+          count: 0,
+          totalSize: 0
+        };
+      }
+      stats.fileTypeBreakdown[fileType].count++;
+      stats.fileTypeBreakdown[fileType].totalSize += fileSize;
+
+      // Size breakdown
+      if (fileSize < 1024 * 1024) { // < 1MB
+        stats.sizeBreakdown.small++;
+      } else if (fileSize < 100 * 1024 * 1024) { // 1MB - 100MB
+        stats.sizeBreakdown.medium++;
+      } else if (fileSize < 1024 * 1024 * 1024) { // 100MB - 1GB
+        stats.sizeBreakdown.large++;
+      } else { // > 1GB
+        stats.sizeBreakdown.huge++;
+      }
+    });
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Storage stats error:', error);
+    res.status(500).json({ error: 'Failed to generate storage statistics' });
   }
 });
 

@@ -31,7 +31,7 @@ import {
   FiMoon
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
-import { fileAPI, folderAPI } from '../services/api';
+import { fileAPI, folderAPI, authAPI } from '../services/api';
 import StorageClassModal from './StorageClassModal';
 import './Dashboard.css';
 
@@ -52,6 +52,8 @@ const Dashboard = () => {
   const [currentView, setCurrentView] = useState('files'); // 'files' or 'starred'
   const [showStorageClassModal, setShowStorageClassModal] = useState(false);
   const [pendingFiles, setPendingFiles] = useState([]);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme, isDark } = useTheme();
 
@@ -113,8 +115,10 @@ const Dashboard = () => {
     }
   };
 
-  const handleStorageClassSelect = async (storageClass) => {
+  const handleStorageClassSelect = async (storageSelection) => {
     setShowStorageClassModal(false);
+    // Extract storage class from the new selection format
+    const storageClass = storageSelection.storageClass;
     await uploadFiles(pendingFiles, storageClass);
     setPendingFiles([]);
   };
@@ -273,6 +277,24 @@ const Dashboard = () => {
     navigate('/login');
   };
 
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await authAPI.deleteAccount();
+      // Clear local storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Redirect to register page
+      navigate('/register');
+    } catch (error) {
+      console.error('Delete account error:', error);
+      alert('Failed to delete account. Please try again.');
+    } finally {
+      setDeletingAccount(false);
+      setShowDeleteAccountModal(false);
+    }
+  };
+
   const downloadFile = (file) => {
     const link = document.createElement('a');
     link.href = file.url;
@@ -423,10 +445,10 @@ const Dashboard = () => {
             <FiClock />
             <span>Recent</span>
           </div>
-          <div className="nav-item">
+          <Link to="/storage" className="nav-item">
             <FiHardDrive />
             <span>Storage</span>
-          </div>
+          </Link>
           <div className="nav-item">
             <FiSettings />
             <span>Settings</span>
@@ -443,10 +465,16 @@ const Dashboard = () => {
               <div className="user-email">{user?.email || 'user@example.com'}</div>
             </div>
           </div>
-          <button className="logout-btn" onClick={handleLogout}>
-            <FiLogOut />
-            <span>Logout</span>
-          </button>
+          <div className="sidebar-actions">
+            <button className="logout-btn" onClick={handleLogout}>
+              <FiLogOut />
+              <span>Logout</span>
+            </button>
+            <button className="delete-account-btn" onClick={() => setShowDeleteAccountModal(true)}>
+              <FiTrash2 />
+              <span>Delete Account</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -743,6 +771,56 @@ const Dashboard = () => {
         file={pendingFiles[0]}
         loading={uploading}
       />
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteAccountModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteAccountModal(false)}>
+          <div className="modal delete-account-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Delete Account</h3>
+              <button
+                className="modal-close"
+                onClick={() => setShowDeleteAccountModal(false)}
+              >
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="warning-message">
+                <div className="warning-icon">⚠️</div>
+                <h4>This action cannot be undone!</h4>
+                <p>
+                  Deleting your account will permanently remove:
+                </p>
+                <ul>
+                  <li>All your files and folders</li>
+                  <li>Your S3 storage bucket</li>
+                  <li>Account settings and preferences</li>
+                  <li>All associated data</li>
+                </ul>
+                <p className="warning-note">
+                  <strong>Warning:</strong> This process is irreversible and will result in the complete loss of all your data.
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowDeleteAccountModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+              >
+                {deletingAccount ? 'Deleting...' : 'Delete Account Permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

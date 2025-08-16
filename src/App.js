@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
+import Storage from './components/Storage';
 import Login from './components/Login';
 import Register from './components/Register';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -29,6 +30,7 @@ function App() {
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
           </Routes>
         </div>
       </Router>

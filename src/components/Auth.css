@@ -64,33 +64,34 @@
 
 .input-wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
+  width: 100%;
 }
 
 .input-icon {
   position: absolute;
-  left: var(--space-3);
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--text-tertiary);
-  z-index: 1;
-  transition: color var(--transition-fast);
-}
-
-.input-wrapper:focus-within .input-icon {
-  color: var(--primary);
+  pointer-events: none;
+  font-size: 1.25em;
+  display: flex;
+  align-items: center;
+  height: 1em;
 }
 
 input {
   width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-10);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--text-primary);
+  height: 48px;
+  padding: 0 16px 0 48px;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
   background: var(--bg-secondary);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
-  transition: all var(--transition-fast);
-  font-family: inherit;
+  color: var(--text-primary);
+  box-sizing: border-box;
+  line-height: 1.5;
+  display: block;
 }
 
 input:focus {
@@ -102,18 +103,23 @@ input:focus {
 
 input::placeholder {
   color: var(--text-tertiary);
+  opacity: 1;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .password-toggle {
   position: absolute;
-  right: var(--space-3);
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
   background: none;
   border: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  padding: var(--space-1);
-  border-radius: var(--radius-sm);
-  transition: all var(--transition-fast);
+  padding: 0;
 }
 
 .password-toggle:hover {
