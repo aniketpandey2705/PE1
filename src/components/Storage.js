@@ -136,6 +136,9 @@ const Storage = () => {
   };
 
   const filteredFiles = files.filter(file => {
+    // Add null checks to prevent errors
+    if (!file || !file.originalName) return false;
+    
     const matchesSearch = file.originalName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStorageClass = selectedStorageClass === 'all' || file.storageClass === selectedStorageClass;
     return matchesSearch && matchesStorageClass;
@@ -154,8 +157,8 @@ const Storage = () => {
         bValue = new Date(b.uploadDate);
         break;
       case 'name':
-        aValue = a.originalName.toLowerCase();
-        bValue = b.originalName.toLowerCase();
+        aValue = a.originalName?.toLowerCase() || '';
+        bValue = b.originalName?.toLowerCase() || '';
         break;
       default:
         aValue = a.fileSize;
@@ -170,6 +173,9 @@ const Storage = () => {
   });
 
   const storageClassBreakdown = files.reduce((acc, file) => {
+    // Add null checks to prevent errors
+    if (!file) return acc;
+    
     const storageClass = file.storageClass || 'STANDARD';
     if (!acc[storageClass]) {
       acc[storageClass] = {
@@ -180,14 +186,14 @@ const Storage = () => {
       };
     }
     acc[storageClass].count++;
-    acc[storageClass].totalSize += file.fileSize;
+    acc[storageClass].totalSize += (file.fileSize || 0);
     acc[storageClass].totalCost += (file.estimatedMonthlyCost || 0);
     acc[storageClass].files.push(file);
     return acc;
   }, {});
 
-  const totalStorage = files.reduce((sum, file) => sum + file.fileSize, 0);
-  const totalMonthlyCost = files.reduce((sum, file) => sum + (file.estimatedMonthlyCost || 0), 0);
+  const totalStorage = files.reduce((sum, file) => sum + (file?.fileSize || 0), 0);
+  const totalMonthlyCost = files.reduce((sum, file) => sum + (file?.estimatedMonthlyCost || 0), 0);
 
   if (loading) {
     return (
@@ -259,7 +265,7 @@ const Storage = () => {
           </div>
           <div className="card-content">
             <h3>Total Files</h3>
-            <div className="card-value">{files.length}</div>
+            <div className="card-value">{files?.length || 0}</div>
             <div className="card-subtitle">Files stored</div>
           </div>
         </div>
