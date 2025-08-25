@@ -24,9 +24,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.error || '';
-
-    // Unauthorized or invalid token -> clear and redirect to login
+    const message = error.response?.data?.error || '';    // Unauthorized or invalid token -> clear and redirect to login
     if (status === 401 || status === 403) {
       try {
         localStorage.removeItem('token');
@@ -56,8 +54,21 @@ api.interceptors.response.use(
 export const authAPI = {
   // Register user
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    return response.data;
+    try {
+      const response = await api.post('/auth/register', userData);
+      if (!response.data || !response.data.token) {
+        throw new Error('Invalid response from server');
+      }
+      return response.data;
+    } catch (error) {
+      // Add detailed error information
+      console.error('Registration API Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    }
   },
 
   // Login user
@@ -139,6 +150,12 @@ export const fileAPI = {
   // Toggle star file
   toggleStar: async (fileId, isStarred) => {
     const response = await api.patch(`/files/${fileId}/star`, { isStarred });
+    return response.data;
+  },
+
+  // Generate share URL
+  generateShareUrl: async (fileId, expiryTime) => {
+    const response = await api.post(`/files/${fileId}/share`, { expiryTime });
     return response.data;
   },
 };

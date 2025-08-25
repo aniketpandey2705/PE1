@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiCheck, FiDollarSign, FiClock, FiInfo, FiHardDrive } from 'react-icons/fi';
+import { 
+  FiX, 
+  FiCheck, 
+  FiDollarSign, 
+  FiClock, 
+  FiInfo, 
+  FiHardDrive,
+  FiCloud,
+  FiDatabase,
+  FiArchive,
+  FiBox,
+  FiZap
+} from 'react-icons/fi';
 import { fileAPI } from '../services/api';
 import './StorageClassModal.css';
 
 const StorageClassModal = ({ 
   isOpen, 
-  onClose, 
+  onClose,/*  */
   onSelect, 
   file,
   loading = false 
@@ -14,6 +26,7 @@ const StorageClassModal = ({
   const [selectedStorageClass, setSelectedStorageClass] = useState(null);
   const [selectedStorageSize, setSelectedStorageSize] = useState(null);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [activeTab, setActiveTab] = useState('recommended'); // 'recommended' or 'all'
 
   // Real AWS S3 pricing per GB per month (as of 2024)
   const STORAGE_PRICING = {

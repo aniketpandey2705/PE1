@@ -21,9 +21,7 @@ import {
   FiList,
   FiMenu,
   FiX,
-  FiPlus,
   FiLogOut,
-  FiMoreVertical,
   FiFolderPlus,
   FiClock,
   FiHardDrive,
@@ -33,6 +31,7 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { fileAPI, folderAPI, authAPI } from '../services/api';
 import StorageClassModal from './StorageClassModal';
+import ShareModal from './ShareModal';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -44,7 +43,8 @@ const Dashboard = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('all');
+  // eslint-disable-next-line no-unused-vars
+  const [activeTab, setActiveTab] = useState('all'); // Will be used for file filtering
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [folderPath, setFolderPath] = useState([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -54,6 +54,8 @@ const Dashboard = () => {
   const [pendingFiles, setPendingFiles] = useState([]);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedFileForShare, setSelectedFileForShare] = useState(null);
   const navigate = useNavigate();
   const { theme, toggleTheme, isDark } = useTheme();
 
@@ -93,15 +95,23 @@ const Dashboard = () => {
     }
   };
 
+  const handleShareClick = (file) => {
+    setSelectedFileForShare(file);
+    setIsShareModalOpen(true);
+  };
+
+  const handleShareModalClose = () => {
+    setIsShareModalOpen(false);
+    setSelectedFileForShare(null);
+  };
+
   const uploadFiles = async (filesToUpload, storageClass = null) => {
     setUploading(true);
     
     try {
       for (const file of filesToUpload) {
-        const onUploadProgress = (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
+        const onUploadProgress = () => {
+          // Progress tracking to be implemented
         };
 
         const response = await fileAPI.uploadFile(file, onUploadProgress, currentFolderId, storageClass);
@@ -302,15 +312,6 @@ const Dashboard = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const shareFile = (file) => {
-    if (file.isFolder) {
-      alert('Cannot share folders directly');
-      return;
-    }
-    navigator.clipboard.writeText(file.url);
-    alert('File URL copied to clipboard!');
   };
 
   const createFolder = async () => {
@@ -627,90 +628,84 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className={`files-grid ${viewMode}`}>
-                {filteredFiles.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`file-item ${selectedFiles.includes(item.id) ? 'selected' : ''} ${item.isFolder ? 'folder-item' : ''}`}
-                    onClick={() => item.isFolder ? openFolder(item) : toggleFileSelection(item.id)}
-                    onDoubleClick={() => item.isFolder ? openFolder(item) : null}
-                  >
-                    <div className="file-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selectedFiles.includes(item.id)}
-                        onChange={() => toggleFileSelection(item.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    
-                    <div className="file-icon">
-                      {getItemIcon(item)}
-                    </div>
-                    
-                    <div className="file-info">
-                      <div className="file-name">
-                        {item.isFolder ? item.folderName : item.originalName}
+                {filteredFiles.map((item) => {
+                  return (
+                    <div
+                      key={item.id}
+                      className={`file-item ${selectedFiles.includes(item.id) ? 'selected' : ''} ${item.isFolder ? 'folder-item' : ''}`}
+                      onClick={() => item.isFolder ? openFolder(item) : toggleFileSelection(item.id)}
+                      onDoubleClick={() => item.isFolder ? openFolder(item) : null}
+                    >
+                      <div className="file-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selectedFiles.includes(item.id)}
+                          onChange={() => toggleFileSelection(item.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
                       </div>
-                      <div className="file-meta">
-                        {item.isFolder ? (
-                          <span className="file-type">Folder</span>
-                        ) : (
-                          <>
-                            <span className="file-size">{formatFileSize(item.fileSize)}</span>
-                            <span className="file-date">{formatDate(item.uploadDate)}</span>
-                          </>
-                        )}
+                      
+                      <div className="file-icon">
+                        {getItemIcon(item)}
+                      </div>
+                      
+                      <div className="file-info">
+                        <div className="file-name">
+                          {item.isFolder ? item.folderName : item.originalName}
+                        </div>
+                        <div className="file-meta">
+                          {item.isFolder ? (
+                            <span className="file-type">Folder</span>
+                          ) : (
+                            <>
+                              <div className="file-details">
+                                <span className="file-type">{item.fileType}</span>
+                                <span className="file-size">{formatFileSize(item.fileSize)}</span>
+                                <span className="file-date">{formatDate(item.uploadDate)}</span>
+                              </div>
+                              <div className="file-actions" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  className="action-btn"
+                                  onClick={() => handleShareClick(item)}
+                                  title="Share file"
+                                >
+                                  <FiShare2 />
+                                </button>
+                                <button
+                                  className="action-btn"
+                                  onClick={() => downloadFile(item)}
+                                  title="Download file"
+                                >
+                                  <FiDownload />
+                                </button>
+                                <button
+                                  className={`star-btn ${item.isStarred ? 'starred' : ''}`}
+                                  aria-label={`${item.isStarred ? 'Unstar' : 'Star'} ${item.originalName}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleStar(item.id, item.isStarred);
+                                  }}
+                                >
+                                  <FiStar />
+                                </button>
+                                <button
+                                  className="action-btn"
+                                  aria-label={`Delete ${item.originalName}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeFile(item.id);
+                                  }}
+                                >
+                                  <FiTrash2 />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="file-actions">
-                      {!item.isFolder && (
-                        <button
-                          className={`star-btn ${item.isStarred ? 'starred' : ''}`}
-                          aria-label={`${item.isStarred ? 'Unstar' : 'Star'} ${item.originalName}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleStar(item.id, item.isStarred);
-                          }}
-                        >
-                          <FiStar />
-                        </button>
-                      )}
-                      {!item.isFolder && (
-                        <button
-                          className="action-btn"
-                          aria-label={`Download ${item.originalName}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            downloadFile(item);
-                          }}
-                        >
-                          <FiDownload />
-                        </button>
-                      )}
-                      <button
-                        className="action-btn"
-                        aria-label={`${item.isFolder ? 'Share folder' : 'Copy link for'} ${item.isFolder ? item.folderName : item.originalName}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          shareFile(item);
-                        }}
-                      >
-                        <FiShare2 />
-                      </button>
-                      <button
-                        className="action-btn"
-                        aria-label={`Delete ${item.isFolder ? item.folderName : item.originalName}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(item.id);
-                        }}
-                      >
-                        <FiTrash2 />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -770,6 +765,13 @@ const Dashboard = () => {
         onSelect={handleStorageClassSelect}
         file={pendingFiles[0]}
         loading={uploading}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={handleShareModalClose}
+        fileDetails={selectedFileForShare}
       />
 
       {/* Delete Account Confirmation Modal */}

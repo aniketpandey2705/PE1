@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import ShareModal from './ShareModal';
 import { 
   FiArrowLeft, 
   FiHardDrive, 
@@ -9,7 +10,6 @@ import {
   FiMusic, 
   FiArchive,
   FiDownload,
-  FiTrash2,
   FiShare2,
   FiStar,
   FiSearch,
@@ -18,7 +18,6 @@ import {
   FiSun,
   FiMoon,
   FiPieChart,
-  FiTrendingUp,
   FiDollarSign,
   FiDatabase
 } from 'react-icons/fi';
@@ -28,15 +27,16 @@ import './Storage.css';
 
 const Storage = () => {
   const [files, setFiles] = useState([]);
-  const [storageStats, setStorageStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStorageClass, setSelectedStorageClass] = useState('all');
   const [sortBy, setSortBy] = useState('size'); // size, date, name
   const [sortOrder, setSortOrder] = useState('desc'); // asc, desc
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const navigate = useNavigate();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -50,12 +50,8 @@ const Storage = () => {
   const fetchStorageData = async () => {
     try {
       setLoading(true);
-      const [filesData, statsData] = await Promise.all([
-        fileAPI.getFiles(),
-        fileAPI.getStorageStats()
-      ]);
+      const filesData = await fileAPI.getFiles();
       setFiles(filesData);
-      setStorageStats(statsData);
     } catch (error) {
       console.error('Error fetching storage data:', error);
     } finally {
@@ -85,6 +81,40 @@ const Storage = () => {
       day: 'numeric',
       year: 'numeric'
     }).format(new Date(date));
+  };
+
+  const handleShareClick = (file) => {
+    setSelectedFile(file);
+    setIsShareModalOpen(true);
+  };
+
+  const handleStarClick = async (file) => {
+    try {
+      const updatedFile = await fileAPI.toggleStar(file.id);
+      setFiles(files.map(f => f.id === file.id ? updatedFile : f));
+    } catch (error) {
+      console.error('Error toggling star:', error);
+    }
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      const downloadUrl = await fileAPI.getDownloadUrl(file.id);
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = file.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
+  const handleShareModalClose = () => {
+    setIsShareModalOpen(false);
+    setSelectedFile(null);
   };
 
   const getStorageClassInfo = (storageClass) => {
@@ -431,23 +461,28 @@ const Storage = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="file-actions">
                   <button
                     className={`star-btn ${file.isStarred ? 'starred' : ''}`}
                     aria-label={`${file.isStarred ? 'Unstar' : 'Star'} ${file.originalName}`}
+                    onClick={() => handleStarClick(file)}
                   >
                     <FiStar />
                   </button>
                   <button
                     className="action-btn"
+                    onClick={() => handleDownload(file)}
                     aria-label={`Download ${file.originalName}`}
+                    title="Download file"
                   >
                     <FiDownload />
                   </button>
                   <button
                     className="action-btn"
+                    onClick={() => handleShareClick(file)}
                     aria-label={`Share ${file.originalName}`}
+                    title="Share file"
                   >
                     <FiShare2 />
                   </button>
@@ -457,6 +492,15 @@ const Storage = () => {
           </div>
         )}
       </div>
+      
+      {/* Share Modal */}
+      {isShareModalOpen && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={handleShareModalClose}
+          fileDetails={selectedFile}
+        />
+      )}
     </div>
   );
 };

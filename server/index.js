@@ -1301,6 +1301,46 @@ app.patch('/api/files/:fileId/star', authenticateToken, async (req, res) => {
   }
 });
 
+// Generate presigned URL for file sharing
+app.post('/api/files/:fileId/share', authenticateToken, async (req, res) => {
+  try {
+    const { expiryTime } = req.body;
+    
+    // Convert expiry time to seconds
+    let expiresIn = 3600; // Default 1 hour
+    switch(expiryTime) {
+      case '24h': expiresIn = 86400; break;
+      case '7d': expiresIn = 604800; break;
+      case '30d': expiresIn = 2592000; break;
+    }
+
+    const files = await readFiles();
+    const file = files.find(f => f.id === req.params.fileId && f.userId === req.user.id);
+    
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    if (!DEV_MODE) {
+      const command = new GetObjectCommand({
+        Bucket: req.user.awsBucketName,
+        Key: file.s3Key
+      });
+      
+      const url = await getSignedUrl(s3Client, command, { expiresIn });
+      res.json({ url });
+    } else {
+      // DEV_MODE: Return a fake URL
+      res.json({ 
+        url: `http://localhost:${PORT}/dev/shared/${file.fileName}?expires=${Date.now() + (expiresIn * 1000)}` 
+      });
+    }
+  } catch (error) {
+    console.error('Share file error:', error);
+    res.status(500).json({ error: 'Failed to generate share URL' });
+  }
+});
+
 // Get User Profile
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
   try {

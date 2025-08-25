@@ -1,0 +1,175 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDropzone } from 'react-dropzone';
+import { 
+  FiUpload, 
+  FiFile, 
+  FiImage, 
+  FiVideo, 
+  FiMusic, 
+  FiArchive,
+  FiTrash2,
+  FiDownload,
+  FiShare2,
+  FiHome,
+  FiFolder,
+  FiStar,
+  FiSettings,
+  FiUser,
+  FiSearch,
+  FiGrid,
+  FiList,
+  FiMenu,
+  FiX,
+  FiPlus,
+  FiLogOut,
+  FiMoreVertical,
+  FiFolderPlus,
+  FiClock,
+  FiHardDrive,
+  FiSun,
+  FiMoon
+} from 'react-icons/fi';
+import { useTheme } from '../contexts/ThemeContext';
+import { fileAPI, folderAPI, authAPI } from '../services/api';
+import StorageClassModal from './StorageClassModal';
+import ShareModal from './ShareModal';
+import './Dashboard.css';
+
+const Dashboard = () => {
+  // ... other state remains the same ...
+
+  const handleShareClick = (file) => {
+    setSelectedFileForShare(file);
+    setIsShareModalOpen(true);
+  };
+
+  const handleShareModalClose = () => {
+    setIsShareModalOpen(false);
+    setSelectedFileForShare(null);
+  };
+
+  const FileItem = ({ item }) => {
+    const isFile = !item.isFolder;
+
+    return (
+      <div
+        className={`file-item ${selectedFiles.includes(item.id) ? 'selected' : ''} ${item.isFolder ? 'folder-item' : ''}`}
+        onClick={() => item.isFolder ? openFolder(item) : toggleFileSelection(item.id)}
+        onDoubleClick={() => item.isFolder ? openFolder(item) : null}
+      >
+        <div className="file-checkbox">
+          <input
+            type="checkbox"
+            checked={selectedFiles.includes(item.id)}
+            onChange={() => toggleFileSelection(item.id)}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        
+        <div className="file-icon">
+          {getItemIcon(item)}
+        </div>
+        
+        <div className="file-info">
+          <div className="file-name">
+            {item.isFolder ? item.folderName : item.originalName}
+          </div>
+          <div className="file-meta">
+            {item.isFolder ? (
+              <span className="file-type">Folder</span>
+            ) : (
+              <>
+                <div className="file-details">
+                  <span className="file-type">{item.fileType}</span>
+                  <span className="file-size">{formatFileSize(item.fileSize)}</span>
+                </div>
+                <div className="file-actions" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="action-btn"
+                    onClick={() => handleShareClick(item)}
+                    title="Share file"
+                  >
+                    <FiShare2 />
+                  </button>
+                  <button
+                    className="action-btn"
+                    onClick={() => downloadFile(item)}
+                    title="Download file"
+                  >
+                    <FiDownload />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="dashboard">
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+        {/* ... sidebar content remains the same ... */}
+      </aside>
+
+      {/* Main Content */}
+      <main className="main-content">
+        {/* Header */}
+        <header className="dashboard-header">
+          {/* ... header content remains the same ... */}
+        </header>
+
+        {/* File Display */}
+        <div className="file-content">
+          {loading ? (
+            <div className="loading-state">Loading...</div>
+          ) : files.length === 0 ? (
+            <div className="empty-state">
+              <FiFolder className="empty-icon" />
+              <h3>No files yet</h3>
+              <p>Upload your first file or create a folder to get started</p>
+            </div>
+          ) : filteredFiles.length === 0 ? (
+            <div className="empty-state">
+              <FiSearch className="empty-icon" />
+              <h3>No files found</h3>
+              <p>Try adjusting your search terms</p>
+            </div>
+          ) : (
+            <div className={`files-grid ${viewMode}`}>
+              {filteredFiles.map((item) => (
+                <FileItem key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Modals */}
+      <StorageClassModal
+        isOpen={showStorageClassModal}
+        onClose={handleStorageClassCancel}
+        onSelect={handleStorageClassSelect}
+        file={pendingFiles[0]}
+        loading={uploading}
+      />
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={handleShareModalClose}
+        fileDetails={selectedFileForShare}
+      />
+
+      {showDeleteAccountModal && (
+        <div className="modal-overlay">
+          {/* ... delete account modal content remains the same ... */}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;

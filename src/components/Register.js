@@ -5,23 +5,47 @@ import { authAPI } from '../services/api';
 import './Auth.css';
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  React.useEffect(() => {
+    const handleMouseMove = (e) => {
+      const container = document.querySelector('.auth-container');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / container.clientWidth) * 100;
+        const y = ((e.clientY - rect.top) / container.clientHeight) * 100;
+        container.style.setProperty('--mouse-x', `${x}%`);
+        container.style.setProperty('--mouse-y', `${y}%`);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [passwordStrength, setPasswordStrength] = useState('');
+
+  const checkPasswordStrength = (password) => {
+    let strength = '';
+    if (password.length === 0) {
+      strength = '';
+    } else if (password.length < 6) {
+      strength = 'Weak';
+    } else if (password.length < 10) {
+      strength = 'Medium';
+    } else {
+      strength = 'Strong';
+    }
+    setPasswordStrength(strength);
   };
 
   const handleSubmit = async (e) => {
@@ -29,35 +53,54 @@ const Register = () => {
     setLoading(true);
     setError('');
 
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
+    if (password !== confirmPassword) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
+    if (password.length < 6) {
       setError('Password must be at least 6 characters long');
       setLoading(false);
       return;
     }
 
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Registration timed out. Please try again.'));
+      }, 10000); // 10 second timeout
+    });
+
     try {
-      const response = await authAPI.register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
-      });
-      
-      // Store token and user data
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      
-      // Redirect to dashboard
-      navigate('/dashboard');
-    } catch (error) {
-      setError(error.response?.data?.error || 'Registration failed. Please try again.');
+      // Race between the registration request and the timeout
+      const response = await Promise.race([
+        authAPI.register({
+          username,
+          email,
+          password,
+        }),
+        timeoutPromise
+      ]);
+
+      if (response && response.token) {
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        navigate('/dashboard');
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (err) {
+      console.error('Registration error:', err);
+      if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err.message.includes('timed out')) {
+        setError('Registration timed out. Server may be unavailable. Please try again.');
+      } else if (err.message === 'Network Error') {
+        setError('Cannot connect to server. Please check your internet connection.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -68,57 +111,53 @@ const Register = () => {
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
-            <FiCloud />
-            <span>SkyCrate</span>
+            <FiCloud /> SkyCrate
           </div>
-          <h1>Create account</h1>
-          <p>Join SkyCrate and get your personal cloud storage</p>
+          <h1>Register</h1>
+          <p>Create your account to access your cloud storage</p>
         </div>
-
         <form onSubmit={handleSubmit} className="auth-form">
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
-
           <div className="form-group">
+            <label htmlFor="username">Username</label>
             <div className="input-wrapper">
-              <FiUser className="input-icon" />
+              <span className="input-icon"><FiUser /></span>
               <input
                 type="text"
-                name="username"
-                placeholder="Username"
-                value={formData.username}
-                onChange={handleChange}
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your username"
                 required
               />
             </div>
           </div>
-
           <div className="form-group">
+            <label htmlFor="email">Email</label>
             <div className="input-wrapper">
-              <FiMail className="input-icon" />
+              <span className="input-icon"><FiMail /></span>
               <input
                 type="email"
-                name="email"
-                placeholder="Email address"
-                value={formData.email}
-                onChange={handleChange}
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
                 required
               />
             </div>
           </div>
-
           <div className="form-group">
+            <label htmlFor="password">Password</label>
             <div className="input-wrapper">
-              <FiLock className="input-icon" />
+              <span className="input-icon"><FiLock /></span>
               <input
                 type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
+                id="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  checkPasswordStrength(e.target.value);
+                }}
+                placeholder="Enter your password"
                 required
               />
               <button
@@ -129,17 +168,22 @@ const Register = () => {
                 {showPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
+            {passwordStrength && (
+              <p className={`password-strength ${passwordStrength.toLowerCase()}`}>
+                Strength: {passwordStrength}
+              </p>
+            )}
           </div>
-
           <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm Password</label>
             <div className="input-wrapper">
-              <FiLock className="input-icon" />
+              <span className="input-icon"><FiLock /></span>
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
-                name="confirmPassword"
-                placeholder="Confirm Password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your password"
                 required
               />
               <button
@@ -151,21 +195,16 @@ const Register = () => {
               </button>
             </div>
           </div>
-
-          <button
-            type="submit"
-            className="auth-button"
-            disabled={loading}
-          >
-            {loading ? 'Creating Account...' : 'Create Account'}
+          {error && <p className="error-message">{error}</p>}
+          <button type="submit" className="auth-button" disabled={loading}>
+            {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
-
         <div className="auth-footer">
           <p>
             Already have an account?{' '}
             <Link to="/login" className="auth-link">
-              Sign in
+              Login
             </Link>
           </p>
         </div>
@@ -174,4 +213,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

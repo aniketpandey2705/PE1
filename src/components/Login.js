@@ -3,8 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiCloud } from 'react-icons/fi';
 import { authAPI } from '../services/api';
 import './Auth.css';
+import LoadingScreen from './LoadingScreen';
 
 const Login = () => {
+  React.useEffect(() => {
+    const handleMouseMove = (e) => {
+      const container = document.querySelector('.auth-container');
+      if (container) {
+        const rect = container.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / container.clientWidth) * 100;
+        const y = ((e.clientY - rect.top) / container.clientHeight) * 100;
+        container.style.setProperty('--mouse-x', `${x}%`);
+        container.style.setProperty('--mouse-y', `${y}%`);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, []);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -28,20 +44,20 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(formData);
-      
+      // brief loading animation before navigating
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response.user));
       
-      navigate('/dashboard');
+      setTimeout(() => { setLoading(false); navigate('/dashboard'); }, 800);
     } catch (error) {
       setError(error.response?.data?.error || 'Login failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
+      {loading && <LoadingScreen message="Preparing your SkyCrate..." />}
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">
@@ -116,4 +132,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

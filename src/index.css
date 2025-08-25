@@ -1,3 +1,76 @@
+/* Theme Variables */
+:root {
+  /* Light Theme Colors */
+  --newport-blue: #1F92CC;
+  --harvest-haze: #DE6A31;
+  --neutral-gray: #C0CBCC;
+  
+  /* Spacing */
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  
+  /* Border Radius */
+  --radius-lg: 0.75rem;
+  
+  /* Typography */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+}
+
+/* Light Theme */
+[data-theme='light'] {
+  --primary: var(--newport-blue);
+  --primary-light: #6FCFFC;
+  --primary-dark: #1A7AA3;
+  --accent: var(--harvest-haze);
+  
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-elevated: #F1F5F9;
+  --bg-tertiary: #E2E8F0;
+  
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-tertiary: #64748B;
+  --text-inverse: #FFFFFF;
+  
+  --border-light: #E2E8F0;
+  --border-focus: var(--primary);
+  
+  --error: #EF4444;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --primary: var(--newport-blue);
+  --primary-light: #6FCFFC;
+  --primary-dark: #1A7AA3;
+  --accent: var(--harvest-haze);
+  
+  --bg-primary: #0F172A;
+  --bg-secondary: #1E293B;
+  --bg-elevated: #334155;
+  --bg-tertiary: #475569;
+  
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-tertiary: #94A3B8;
+  --text-inverse: #0F172A;
+  
+  --border-light: #334155;
+  --border-focus: var(--primary);
+  
+  --error: #EF4444;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
 /* Global Styles */
 * {
   margin: 0;
@@ -29,14 +102,14 @@ a {
 
 /* Focus styles for accessibility */
 *:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 /* Selection styles */
 ::selection {
-  background-color: rgb(59 130 246 / 0.2);
-  color: #0f172a;
+  background-color: rgba(125, 162, 169, 0.2);
+  color: var(--text-primary);
 }
 
 /* Scrollbar styles */
@@ -45,7 +118,7 @@ a {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -55,4 +128,4 @@ a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-} 
+}
