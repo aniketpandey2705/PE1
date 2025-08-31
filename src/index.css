@@ -49,15 +49,15 @@
 
 /* Dark Theme */
 [data-theme='dark'] {
-  --primary: var(--newport-blue);
-  --primary-light: #6FCFFC;
-  --primary-dark: #1A7AA3;
-  --accent: var(--harvest-haze);
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
+  --primary-dark: #1d4ed8;
+  --accent: #f97316;
   
-  --bg-primary: #0F172A;
-  --bg-secondary: #1E293B;
-  --bg-elevated: #334155;
-  --bg-tertiary: #475569;
+  --bg-primary: #030712;
+  --bg-secondary: #111827;
+  --bg-elevated: #1f2937;
+  --bg-tertiary: #374151;
   
   --text-primary: #F8FAFC;
   --text-secondary: #E2E8F0;

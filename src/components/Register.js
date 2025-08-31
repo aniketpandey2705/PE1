@@ -5,6 +5,8 @@ import { authAPI } from '../services/api';
 import './Auth.css';
 
 const Register = () => {
+  const navigate = useNavigate();
+
   React.useEffect(() => {
     const handleMouseMove = (e) => {
       const container = document.querySelector('.auth-container');
@@ -27,7 +29,6 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -108,6 +109,27 @@ const Register = () => {
 
   return (
     <div className="auth-container">
+      <button 
+        onClick={() => navigate('/')} 
+        className="back-button"
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          padding: '8px 16px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '4px',
+          color: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.2s ease',
+          zIndex: 1
+        }}>
+        ← Back
+      </button>
       <div className="auth-card">
         <div className="auth-header">
           <div className="auth-logo">

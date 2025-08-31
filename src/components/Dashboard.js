@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
+import Storage from './Storage';
 import { 
   FiUpload, 
-  FiFile, 
   FiImage, 
   FiVideo, 
   FiMusic, 
@@ -26,19 +26,31 @@ import {
   FiClock,
   FiHardDrive,
   FiSun,
-  FiMoon
+  FiMoon,
+  FiDollarSign,
+  FiFile
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import { fileAPI, folderAPI, authAPI } from '../services/api';
 import StorageClassModal from './StorageClassModal';
 import ShareModal from './ShareModal';
+import DashboardBilling from './DashboardBilling';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth <= 1200);
   const [viewMode, setViewMode] = useState('grid');
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setSidebarCollapsed(window.innerWidth <= 1200);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,7 +69,7 @@ const Dashboard = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedFileForShare, setSelectedFileForShare] = useState(null);
   const navigate = useNavigate();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -405,18 +417,16 @@ const Dashboard = () => {
   return (
     <div className="dashboard">
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo">
-            <FiFolder />
-            <span>SkyCrate</span>
-          </div>
-          <button 
-            className="sidebar-close"
-            onClick={() => setSidebarOpen(false)}
+          <div 
+            className="sidebar-logo"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <FiX />
-          </button>
+            <FiFolder className={`logo-icon ${sidebarCollapsed ? 'rotate' : ''}`} />
+            <span className={`logo-text ${!sidebarCollapsed ? 'slide-in' : ''}`}>SkyCrate</span>
+          </div>
         </div>
         
         <nav className="sidebar-nav">
@@ -446,10 +456,20 @@ const Dashboard = () => {
             <FiClock />
             <span>Recent</span>
           </div>
-          <Link to="/storage" className="nav-item">
+          <div
+            className={`nav-item ${currentView === 'storage' ? 'active' : ''}`}
+            onClick={() => setCurrentView('storage')}
+          >
             <FiHardDrive />
             <span>Storage</span>
-          </Link>
+          </div>
+          <div
+            className={`nav-item ${currentView === 'billing' ? 'active' : ''}`}
+            onClick={() => setCurrentView('billing')}
+          >
+            <FiDollarSign />
+            <span>Pricing & Bill</span>
+          </div>
           <div className="nav-item">
             <FiSettings />
             <span>Settings</span>
@@ -537,8 +557,14 @@ const Dashboard = () => {
 
         {/* Content Area */}
         <div className="content-area">
-          {/* Breadcrumb Navigation - Only show in files view */}
-          {currentView === 'files' && folderPath.length > 0 && (
+          {currentView === 'storage' ? (
+            <Storage />
+          ) : currentView === 'billing' ? (
+            <DashboardBilling />
+          ) : (
+            <>
+              {/* Files and other content */}
+              {currentView === 'files' && folderPath.length > 0 && (
             <div className="breadcrumb">
               <button
                 className="breadcrumb-item"
@@ -709,6 +735,8 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       </main>
 

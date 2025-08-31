@@ -1,7 +1,11 @@
 /* Landing Page Styles */
 .landing-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  background: linear-gradient(135deg, 
+    color-mix(in srgb, var(--bg-primary) 95%, var(--primary) 5%),
+    var(--bg-primary)
+  );
+  color: var(--text-primary);
 }
 
 /* Navigation */
@@ -18,7 +22,9 @@
 }
 
 [data-theme="dark"] .navbar {
-  background: rgba(26, 26, 26, 0.95); /* Use a darker background for dark theme navbar */
+  background: rgba(17, 24, 39, 0.95);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .nav-content {

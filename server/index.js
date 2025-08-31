@@ -108,6 +108,10 @@ if (!DEV_MODE && s3Client) {
 const DATA_DIR = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const FILES_FILE = path.join(DATA_DIR, 'files.json');
+const BILLING_FILE = path.join(DATA_DIR, 'billing.json');
+
+// Site margin configuration (markup percentage)
+const SITE_MARGIN = parseFloat(process.env.SITE_MARGIN || '30'); // 30% markup by default
 
 // Initialize data storage
 const initializeStorage = async () => {
@@ -126,6 +130,13 @@ const initializeStorage = async () => {
       await fs.access(FILES_FILE);
     } catch {
       await fs.writeFile(FILES_FILE, JSON.stringify([], null, 2));
+    }
+
+    // Initialize billing file if it doesn't exist
+    try {
+      await fs.access(BILLING_FILE);
+    } catch {
+      await fs.writeFile(BILLING_FILE, JSON.stringify([], null, 2));
     }
   } catch (error) {
     console.error('Error initializing storage:', error);
@@ -157,6 +168,20 @@ const readFiles = async () => {
 
 const writeFiles = async (files) => {
   await fs.writeFile(FILES_FILE, JSON.stringify(files, null, 2));
+};
+
+// Billing data access functions
+const readBilling = async () => {
+  try {
+    const data = await fs.readFile(BILLING_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return [];
+  }
+};
+
+const writeBilling = async (billing) => {
+  await fs.writeFile(BILLING_FILE, JSON.stringify(billing, null, 2));
 };
 
 // Initialize storage on startup
@@ -252,9 +277,9 @@ const getOptimalStorageClass = (fileType, fileSize, fileName = '') => {
   return recommendation.recommended;
 };
 
-const getStorageClassCost = (storageClass) => {
-  // Approximate monthly costs per GB (as of 2024)
-  const costs = {
+const getStorageClassCost = (storageClass, withMargin = true) => {
+  // Base AWS costs per GB/month (as of 2024)
+  const baseCosts = {
     'STANDARD': 0.023,
     'STANDARD_IA': 0.0125,
     'ONEZONE_IA': 0.01,
@@ -262,7 +287,111 @@ const getStorageClassCost = (storageClass) => {
     'GLACIER': 0.0036,
     'DEEP_ARCHIVE': 0.00099
   };
-  return costs[storageClass] || costs['STANDARD'];
+  
+  const baseCost = baseCosts[storageClass] || baseCosts['STANDARD'];
+  
+  if (withMargin) {
+    // Apply site margin markup
+    return baseCost * (1 + SITE_MARGIN / 100);
+  }
+  
+  return baseCost;
+};
+
+// Pricing structure with site margin
+const getPricingStructure = () => {
+  return {
+    storage: {
+      standard: {
+        name: 'Standard Storage',
+        baseCost: 0.023,
+        price: getStorageClassCost('STANDARD'),
+        description: 'Frequently accessed data'
+      },
+      ia: {
+        name: 'Infrequent Access (IA)',
+        baseCost: 0.0125,
+        price: getStorageClassCost('STANDARD_IA'),
+        description: 'Less frequently accessed data'
+      },
+      archive_instant: {
+        name: 'Archive Instant Retrieval',
+        baseCost: 0.004,
+        price: getStorageClassCost('GLACIER_IR'),
+        description: 'Rarely accessed, instant retrieval'
+      },
+      flexible_archive: {
+        name: 'Flexible Archive',
+        baseCost: 0.0036,
+        price: getStorageClassCost('GLACIER'),
+        description: 'Minutes to hours retrieval'
+      },
+      deep_archive: {
+        name: 'Deep Archive',
+        baseCost: 0.00099,
+        price: getStorageClassCost('DEEP_ARCHIVE'),
+        description: 'Up to 12 hours retrieval'
+      }
+    },
+    requests: {
+      uploads: {
+        name: 'Uploads & Data Management',
+        baseCost: 0.05,
+        price: 0.05 * (1 + SITE_MARGIN / 100),
+        unit: '1,000 requests'
+      },
+      downloads: {
+        name: 'Downloads & Data Retrieval',
+        baseCost: 0.004,
+        price: 0.004 * (1 + SITE_MARGIN / 100),
+        unit: '1,000 requests'
+      }
+    },
+    transfer: {
+      out: {
+        name: 'Data Transfer Out',
+        baseCost: 0.10,
+        price: 0.10 * (1 + SITE_MARGIN / 100),
+        freeAllowance: 10,
+        description: 'First 10 GB free monthly'
+      }
+    },
+    retrieval: {
+      flexible_archive: {
+        name: 'Flexible Archive Retrieval',
+        baseCost: 0.04,
+        price: 0.04 * (1 + SITE_MARGIN / 100)
+      },
+      deep_archive: {
+        name: 'Deep Archive Retrieval',
+        baseCost: 0.03,
+        price: 0.03 * (1 + SITE_MARGIN / 100)
+      }
+    },
+    margin: SITE_MARGIN
+  };
+};
+
+// Track billing activity
+const trackBillingActivity = async (userId, activityType, details) => {
+  try {
+    const billing = await readBilling();
+    const activity = {
+      id: genId(),
+      userId: userId,
+      type: activityType, // 'storage', 'request_upload', 'request_download', 'transfer_out', 'retrieval'
+      timestamp: new Date().toISOString(),
+      details: details,
+      cost: details.cost || 0
+    };
+    
+    billing.push(activity);
+    await writeBilling(billing);
+    
+    return activity;
+  } catch (error) {
+    console.error('Error tracking billing activity:', error);
+  }
 };
 
 // Multer configuration: memory storage with limits and MIME filter
@@ -621,6 +750,14 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
     
     const estimatedMonthlyCost = getStorageClassCost(selectedStorageClass) * (size / (1024 * 1024 * 1024)); // Cost per GB
     
+    // Track upload request billing
+    await trackBillingActivity(req.user.id, 'request_upload', {
+      fileName: originalname,
+      fileSize: size,
+      storageClass: selectedStorageClass,
+      cost: getPricingStructure().requests.uploads.price / 1000 // Cost per single request
+    });
+    
     let signedUrl = '';
 
     if (!DEV_MODE) {
@@ -661,7 +798,7 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
       await s3Client.send(uploadCommand);
 
       console.log(`✅ File uploaded with storage class: ${selectedStorageClass}`);
-      console.log(`💰 Estimated monthly cost: $${estimatedMonthlyCost.toFixed(4)}`);
+      console.log(`💰 Estimated monthly cost: ${estimatedMonthlyCost.toFixed(4)}`);
 
       // Generate pre-signed URL for download
       const getObjectCommand = new GetObjectCommand({
@@ -669,6 +806,14 @@ app.post('/api/files/upload', authenticateToken, upload.single('file'), async (r
         Key: s3Key
       });
       signedUrl = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+      
+      // Track storage billing
+      await trackBillingActivity(req.user.id, 'storage', {
+        fileName: fileName,
+        fileSize: size,
+        storageClass: selectedStorageClass,
+        cost: estimatedMonthlyCost
+      });
     } else {
       // DEV_MODE: Generate a fake URL for testing
       signedUrl = `http://localhost:${PORT}/dev/file/${fileName}`;
@@ -779,6 +924,13 @@ app.get('/api/files', authenticateToken, async (req, res) => {
             Key: file.s3Key
           });
           const signedUrl = await getSignedUrl(s3Client, getObjectCommand, { expiresIn: 3600 });
+          
+          // Track download request billing
+          await trackBillingActivity(req.user.id, 'request_download', {
+            fileName: file.fileName,
+            fileSize: file.fileSize,
+            cost: getPricingStructure().requests.downloads.price / 1000 // Cost per single request
+          });
 
           return {
             id: file.id,
@@ -881,6 +1033,38 @@ app.get('/api/storage/cost-analysis', authenticateToken, async (req, res) => {
 });
 
 // Get Storage Statistics
+app.get('/api/billing/details', authenticateToken, async (req, res) => {
+  try {
+    const files = await readFiles();
+    const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
+
+    // For now, we'll assume a user is on a free plan.
+    // In a real application, you would fetch this from your user database.
+    const plan = { name: 'Free', price: 0 }; 
+
+    const usage = {
+      totalSize: userFiles.reduce((sum, file) => sum + (file.fileSize || 0), 0),
+      totalFiles: userFiles.length,
+    };
+
+    const estimatedCost = userFiles.reduce((sum, file) => sum + (file.estimatedMonthlyCost || 0), 0);
+
+    const nextBillingDate = new Date();
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+
+    res.json({
+      plan,
+      usage,
+      estimatedCost,
+      nextBillingDate: nextBillingDate.toISOString(),
+    });
+
+  } catch (error) {
+    console.error('Get billing details error:', error);
+    res.status(500).json({ error: 'Failed to fetch billing details' });
+  }
+});
+
 app.get('/api/storage/stats', authenticateToken, async (req, res) => {
   try {
     const files = await readFiles();
@@ -1373,6 +1557,285 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+// Get Real Usage Data and Billing
+app.get('/api/billing/usage', authenticateToken, async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const currentDate = new Date();
+    const targetMonth = month ? parseInt(month) : currentDate.getMonth() + 1;
+    const targetYear = year ? parseInt(year) : currentDate.getFullYear();
+    
+    const files = await readFiles();
+    const billing = await readBilling();
+    const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
+    const userBilling = billing.filter(b => b.userId === req.user.id);
+    
+    // Calculate current storage usage
+    const storageUsage = {};
+    let totalStorageCost = 0;
+    
+    userFiles.forEach(file => {
+      const storageClass = file.storageClass || 'STANDARD';
+      if (!storageUsage[storageClass]) {
+        storageUsage[storageClass] = { used: 0, cost: 0 };
+      }
+      const sizeInGB = (file.fileSize || 0) / (1024 * 1024 * 1024);
+      const monthlyCost = getStorageClassCost(storageClass) * sizeInGB;
+      storageUsage[storageClass].used += sizeInGB;
+      storageUsage[storageClass].cost += monthlyCost;
+      totalStorageCost += monthlyCost;
+    });
+    
+    // Calculate request costs for the month
+    const monthStart = new Date(targetYear, targetMonth - 1, 1);
+    const monthEnd = new Date(targetYear, targetMonth, 0);
+    
+    const monthlyBilling = userBilling.filter(b => {
+      const activityDate = new Date(b.timestamp);
+      return activityDate >= monthStart && activityDate <= monthEnd;
+    });
+    
+    const requestCosts = {
+      uploads: { count: 0, cost: 0 },
+      downloads: { count: 0, cost: 0 }
+    };
+    
+    const transferCosts = {
+      out: { used: 0, freeUsed: 0, billableUsed: 0, cost: 0 }
+    };
+    
+    const retrievalCosts = {
+      flexible_archive: { used: 0, cost: 0 },
+      deep_archive: { used: 0, cost: 0 }
+    };
+    
+    monthlyBilling.forEach(activity => {
+      switch(activity.type) {
+        case 'request_upload':
+          requestCosts.uploads.count++;
+          requestCosts.uploads.cost += activity.cost;
+          break;
+        case 'request_download':
+          requestCosts.downloads.count++;
+          requestCosts.downloads.cost += activity.cost;
+          break;
+        case 'transfer_out':
+          const transferGB = activity.details.sizeGB || 0;
+          transferCosts.out.used += transferGB;
+          if (transferCosts.out.used <= 10) {
+            transferCosts.out.freeUsed += transferGB;
+          } else {
+            const billable = transferGB - Math.max(0, 10 - (transferCosts.out.used - transferGB));
+            transferCosts.out.billableUsed += billable;
+            transferCosts.out.cost += billable * getPricingStructure().transfer.out.price;
+          }
+          break;
+        case 'retrieval':
+          if (activity.details.storageClass === 'GLACIER') {
+            const retrievalGB = activity.details.sizeGB || 0;
+            retrievalCosts.flexible_archive.used += retrievalGB;
+            retrievalCosts.flexible_archive.cost += retrievalGB * getPricingStructure().retrieval.flexible_archive.price;
+          } else if (activity.details.storageClass === 'DEEP_ARCHIVE') {
+            const retrievalGB = activity.details.sizeGB || 0;
+            retrievalCosts.deep_archive.used += retrievalGB;
+            retrievalCosts.deep_archive.cost += retrievalGB * getPricingStructure().retrieval.deep_archive.price;
+          }
+          break;
+      }
+    });
+    
+    const totalUsageCost = totalStorageCost +
+                          requestCosts.uploads.cost +
+                          requestCosts.downloads.cost +
+                          transferCosts.out.cost +
+                          retrievalCosts.flexible_archive.cost +
+                          retrievalCosts.deep_archive.cost;
+    
+    // Calculate projected month-end cost based on current usage trend
+    const daysInMonth = new Date(targetYear, targetMonth, 0).getDate();
+    const currentDay = currentDate.getDate();
+    const projectedCost = targetMonth === currentDate.getMonth() + 1 && targetYear === currentDate.getFullYear()
+      ? (totalUsageCost / currentDay) * daysInMonth
+      : totalUsageCost;
+    
+    res.json({
+      month: targetMonth,
+      year: targetYear,
+      storage: {
+        classes: storageUsage,
+        totalUsed: userFiles.reduce((sum, f) => sum + (f.fileSize || 0) / (1024 * 1024 * 1024), 0),
+        totalCost: totalStorageCost
+      },
+      requests: {
+        uploads: requestCosts.uploads,
+        downloads: requestCosts.downloads,
+        totalCost: requestCosts.uploads.cost + requestCosts.downloads.cost
+      },
+      transfer: {
+        out: transferCosts.out,
+        totalCost: transferCosts.out.cost
+      },
+      retrieval: {
+        flexible_archive: retrievalCosts.flexible_archive,
+        deep_archive: retrievalCosts.deep_archive,
+        totalCost: retrievalCosts.flexible_archive.cost + retrievalCosts.deep_archive.cost
+      },
+      totalCost: totalUsageCost,
+      projectedMonthEnd: projectedCost,
+      pricing: getPricingStructure()
+    });
+    
+  } catch (error) {
+    console.error('Get billing usage error:', error);
+    res.status(500).json({ error: 'Failed to fetch billing usage' });
+  }
+});
+
+// Get Billing History
+app.get('/api/billing/history', authenticateToken, async (req, res) => {
+  try {
+    const { limit = 12 } = req.query; // Default to 12 months
+    
+    const files = await readFiles();
+    const billing = await readBilling();
+    const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
+    const userBilling = billing.filter(b => b.userId === req.user.id);
+    
+    // Generate monthly billing history
+    const history = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < parseInt(limit); i++) {
+      const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const month = targetDate.getMonth() + 1;
+      const year = targetDate.getFullYear();
+      
+      const monthStart = new Date(year, month - 1, 1);
+      const monthEnd = new Date(year, month, 0);
+      
+      const monthlyBilling = userBilling.filter(b => {
+        const activityDate = new Date(b.timestamp);
+        return activityDate >= monthStart && activityDate <= monthEnd;
+      });
+      
+      // Calculate costs for this month
+      const storageCost = userFiles.reduce((sum, file) => {
+        const fileDate = new Date(file.uploadDate);
+        if (fileDate <= monthEnd) {
+          const sizeInGB = (file.fileSize || 0) / (1024 * 1024 * 1024);
+          return sum + (getStorageClassCost(file.storageClass || 'STANDARD') * sizeInGB);
+        }
+        return sum;
+      }, 0);
+      
+      const requestCost = monthlyBilling
+        .filter(b => b.type.startsWith('request_'))
+        .reduce((sum, b) => sum + b.cost, 0);
+        
+      const transferCost = monthlyBilling
+        .filter(b => b.type === 'transfer_out')
+        .reduce((sum, b) => sum + b.cost, 0);
+        
+      const retrievalCost = monthlyBilling
+        .filter(b => b.type === 'retrieval')
+        .reduce((sum, b) => sum + b.cost, 0);
+      
+      const totalCost = storageCost + requestCost + transferCost + retrievalCost;
+      
+      history.push({
+        id: i + 1,
+        date: monthStart.toISOString(),
+        period: `${targetDate.toLocaleDateString('en-US', { month: 'long' })} ${year}`,
+        breakdown: {
+          storage: parseFloat(storageCost.toFixed(2)),
+          requests: parseFloat(requestCost.toFixed(2)),
+          transfer: parseFloat(transferCost.toFixed(2)),
+          retrieval: parseFloat(retrievalCost.toFixed(2))
+        },
+        total: parseFloat(totalCost.toFixed(2)),
+        status: i === 0 ? 'current' : 'paid',
+        invoice: `INV-${year}-${String(month).padStart(2, '0')}`
+      });
+    }
+    
+    res.json(history);
+    
+  } catch (error) {
+    console.error('Get billing history error:', error);
+    res.status(500).json({ error: 'Failed to fetch billing history' });
+  }
+});
+
+// Get Current Month Costs
+app.get('/api/billing/current', authenticateToken, async (req, res) => {
+  try {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    const currentYear = currentDate.getFullYear();
+    
+    const files = await readFiles();
+    const billing = await readBilling();
+    const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
+    const userBilling = billing.filter(b => b.userId === req.user.id);
+    
+    // Calculate current storage usage
+    let totalStorageCost = 0;
+    userFiles.forEach(file => {
+      const sizeInGB = (file.fileSize || 0) / (1024 * 1024 * 1024);
+      const monthlyCost = getStorageClassCost(file.storageClass || 'STANDARD') * sizeInGB;
+      totalStorageCost += monthlyCost;
+    });
+    
+    // Calculate request costs for current month
+    const monthStart = new Date(currentYear, currentMonth - 1, 1);
+    const monthEnd = new Date(currentYear, currentMonth, 0);
+    
+    const currentMonthBilling = userBilling.filter(b => {
+      const activityDate = new Date(b.timestamp);
+      return activityDate >= monthStart && activityDate <= monthEnd;
+    });
+    
+    const currentMonthCost = totalStorageCost + currentMonthBilling.reduce((sum, b) => sum + b.cost, 0);
+    
+    // Calculate last month costs for comparison
+    const lastMonthStart = new Date(currentYear, currentMonth - 2, 1);
+    const lastMonthEnd = new Date(currentYear, currentMonth - 1, 0);
+    
+    const lastMonthBilling = userBilling.filter(b => {
+      const activityDate = new Date(b.timestamp);
+      return activityDate >= lastMonthStart && activityDate <= lastMonthEnd;
+    });
+    
+    const lastMonthCost = totalStorageCost + lastMonthBilling.reduce((sum, b) => sum + b.cost, 0);
+    
+    // Calculate projected month-end cost
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const currentDay = currentDate.getDate();
+    const projectedCost = currentMonth === currentDate.getMonth() + 1 && currentYear === currentDate.getFullYear()
+      ? (currentMonthCost / currentDay) * daysInMonth
+      : currentMonthCost;
+    
+    // Calculate trend
+    let trend = 'stable';
+    if (currentMonthCost > lastMonthCost * 1.1) {
+      trend = 'up';
+    } else if (currentMonthCost < lastMonthCost * 0.9) {
+      trend = 'down';
+    }
+    
+    res.json({
+      monthToDate: currentMonthCost,
+      projectedMonthEnd: projectedCost,
+      lastMonth: lastMonthCost,
+      trend: trend
+    });
+    
+  } catch (error) {
+    console.error('Get current billing error:', error);
+    res.status(500).json({ error: 'Failed to fetch current billing data' });
   }
 });
 

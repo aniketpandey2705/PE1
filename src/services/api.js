@@ -181,6 +181,15 @@ export const folderAPI = {
   },
 };
 
+// Billing API
+export const billingAPI = {
+  getBillingDetails: async () => {
+    const response = await api.get('/billing/details');
+    return response.data;
+  },
+};
+
+
 // Health check
 export const healthCheck = async () => {
   const response = await api.get('/health');

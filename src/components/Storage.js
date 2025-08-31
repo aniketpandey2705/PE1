@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import ShareModal from './ShareModal';
-import { 
-  FiArrowLeft, 
+import {  
   FiHardDrive, 
   FiFile, 
   FiImage, 
@@ -13,30 +12,30 @@ import {
   FiShare2,
   FiStar,
   FiSearch,
-  FiGrid,
-  FiList,
-  FiSun,
-  FiMoon,
   FiPieChart,
   FiDollarSign,
   FiDatabase
 } from 'react-icons/fi';
-import { useTheme } from '../contexts/ThemeContext';
 import { fileAPI } from '../services/api';
 import './Storage.css';
 
 const Storage = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStorageClass, setSelectedStorageClass] = useState('all');
-  const [sortBy, setSortBy] = useState('size'); // size, date, name
-  const [sortOrder, setSortOrder] = useState('desc'); // asc, desc
+  const [sortBy, setSortBy] = useState('size');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [storageStats, setStorageStats] = useState({
+    totalStorage: 0,
+    usedStorage: 0,
+    fileCount: 0
+  });
   const navigate = useNavigate();
-  const { toggleTheme, isDark } = useTheme();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -50,10 +49,14 @@ const Storage = () => {
   const fetchStorageData = async () => {
     try {
       setLoading(true);
+      setError('');
       const filesData = await fileAPI.getFiles();
+      const stats = await fileAPI.getStorageStats();
       setFiles(filesData);
+      setStorageStats(stats);
     } catch (error) {
       console.error('Error fetching storage data:', error);
+      setError('Failed to load storage data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -225,274 +228,237 @@ const Storage = () => {
   const totalStorage = files.reduce((sum, file) => sum + (file?.fileSize || 0), 0);
   const totalMonthlyCost = files.reduce((sum, file) => sum + (file?.estimatedMonthlyCost || 0), 0);
 
-  if (loading) {
-    return (
-      <div className="storage-page">
-        <div className="loading-container">
+  return (
+    <div className="storage-page">
+
+
+      {loading ? (
+        <div className="storage-loading">
           <div className="loading-spinner"></div>
           <p>Loading storage information...</p>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="storage-page">
-      {/* Header */}
-      <header className="storage-header">
-        <div className="header-left">
-          <Link to="/dashboard" className="back-btn">
-            <FiArrowLeft />
-            Back to Dashboard
-          </Link>
-          <div className="page-title">
-            <FiHardDrive />
-            <h1>Storage Analytics</h1>
-          </div>
-        </div>
-        
-        <div className="header-right">
-          <div className="view-toggle">
-            <button 
-              className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-            >
-              <FiGrid />
-            </button>
-            <button 
-              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              <FiList />
-            </button>
-          </div>
-          <button 
-            className="theme-toggle"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
-          >
-            {isDark ? <FiSun /> : <FiMoon />}
-          </button>
-        </div>
-      </header>
-
-      {/* Storage Overview Cards */}
-      <div className="storage-overview">
-        <div className="overview-card total-storage">
-          <div className="card-icon">
-            <FiHardDrive />
-          </div>
-          <div className="card-content">
-            <h3>Total Storage</h3>
-            <div className="card-value">{formatFileSize(totalStorage)}</div>
-            <div className="card-subtitle">Used across all storage classes</div>
-          </div>
-        </div>
-
-        <div className="overview-card total-files">
-          <div className="card-icon">
-            <FiFile />
-          </div>
-          <div className="card-content">
-            <h3>Total Files</h3>
-            <div className="card-value">{files?.length || 0}</div>
-            <div className="card-subtitle">Files stored</div>
-          </div>
-        </div>
-
-        <div className="overview-card monthly-cost">
-          <div className="card-icon">
-            <FiDollarSign />
-          </div>
-          <div className="card-content">
-            <h3>Monthly Cost</h3>
-            <div className="card-value">${totalMonthlyCost.toFixed(2)}</div>
-            <div className="card-subtitle">Estimated monthly storage cost</div>
-          </div>
-        </div>
-
-        <div className="overview-card storage-classes">
-          <div className="card-icon">
-            <FiPieChart />
-          </div>
-          <div className="card-content">
-            <h3>Storage Classes</h3>
-            <div className="card-value">{Object.keys(storageClassBreakdown).length}</div>
-            <div className="card-subtitle">Active storage classes</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Storage Class Breakdown */}
-      <div className="storage-breakdown">
-        <h2>Storage Class Breakdown</h2>
-        <div className="breakdown-grid">
-          {Object.entries(storageClassBreakdown).map(([storageClass, data]) => {
-            const classInfo = getStorageClassInfo(storageClass);
-            return (
-              <div key={storageClass} className="breakdown-card">
-                <div className="breakdown-header">
-                  <div className="storage-class-icon" style={{ color: classInfo.color }}>
-                    {classInfo.icon}
-                  </div>
-                  <div className="storage-class-info">
-                    <h3>{classInfo.name}</h3>
-                    <p>{classInfo.description}</p>
-                    <span className="cost-info">{classInfo.cost}</span>
-                  </div>
-                </div>
-                <div className="breakdown-stats">
-                  <div className="stat">
-                    <span className="stat-label">Files:</span>
-                    <span className="stat-value">{data.count}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Size:</span>
-                    <span className="stat-value">{formatFileSize(data.totalSize)}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Monthly Cost:</span>
-                    <span className="stat-value">${data.totalCost.toFixed(2)}</span>
-                  </div>
-                </div>
-                <button 
-                  className="view-files-btn"
-                  onClick={() => setSelectedStorageClass(storageClass)}
-                >
-                  View Files
-                </button>
+      ) : error ? (
+        <div className="storage-error">{error}</div>
+      ) : (
+        <div className="storage-content">
+          <div className="storage-overview">
+            <div className="overview-card total-storage">
+              <div className="card-icon storage-icon">
+                <FiHardDrive />
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Files Section */}
-      <div className="files-section">
-        <div className="files-header">
-          <div className="files-title">
-            <h2>
-              {selectedStorageClass === 'all' 
-                ? 'All Files' 
-                : `${getStorageClassInfo(selectedStorageClass).name} Files`
-              }
-            </h2>
-            <span className="file-count">({sortedFiles.length} files)</span>
-          </div>
-          
-          <div className="files-controls">
-            <div className="search-bar">
-              <FiSearch />
-              <input
-                type="text"
-                placeholder="Search files..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+              <div className="card-content">
+                <h3>Total Storage</h3>
+                <div className="card-value">{formatFileSize(storageStats.usedStorage)}</div>
+                <div className="card-subtitle">Used space of {formatFileSize(storageStats.totalStorage)}</div>
+              </div>
             </div>
-            
-            <div className="filter-controls">
-              <select 
-                value={selectedStorageClass}
-                onChange={(e) => setSelectedStorageClass(e.target.value)}
-                className="storage-class-filter"
-              >
-                <option value="all">All Storage Classes</option>
-                {Object.keys(storageClassBreakdown).map(storageClass => (
-                  <option key={storageClass} value={storageClass}>
-                    {getStorageClassInfo(storageClass).name}
-                  </option>
-                ))}
-              </select>
-              
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="sort-by"
-              >
-                <option value="size">Sort by Size</option>
-                <option value="date">Sort by Date</option>
-                <option value="name">Sort by Name</option>
-              </select>
-              
-              <button 
-                className="sort-order-btn"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              >
-                {sortOrder === 'asc' ? '↑' : '↓'}
-              </button>
+
+            <div className="overview-card total-files">
+              <div className="card-icon">
+                <FiFile />
+              </div>
+              <div className="card-content">
+                <h3>Total Files</h3>
+                <div className="card-value">{files?.length || 0}</div>
+                <div className="card-subtitle">Files stored</div>
+              </div>
+            </div>
+
+            <div className="overview-card monthly-cost">
+              <div className="card-icon">
+                <FiDollarSign />
+              </div>
+              <div className="card-content">
+                <h3>Monthly Cost</h3>
+                <div className="card-value">${totalMonthlyCost.toFixed(2)}</div>
+                <div className="card-subtitle">Estimated monthly storage cost</div>
+              </div>
+            </div>
+
+            <div className="overview-card storage-classes">
+              <div className="card-icon">
+                <FiPieChart />
+              </div>
+              <div className="card-content">
+                <h3>Storage Classes</h3>
+                <div className="card-value">{Object.keys(storageClassBreakdown).length}</div>
+                <div className="card-subtitle">Active storage classes</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {sortedFiles.length === 0 ? (
-          <div className="empty-state">
-            <FiFile className="empty-icon" />
-            <h3>No files found</h3>
-            <p>
-              {selectedStorageClass === 'all' 
-                ? 'No files match your search criteria'
-                : `No files found in ${getStorageClassInfo(selectedStorageClass).name} storage class`
-              }
-            </p>
-          </div>
-        ) : (
-          <div className={`files-grid ${viewMode}`}>
-            {sortedFiles.map((file) => (
-              <div key={file.id} className="file-item">
-                <div className="file-icon">
-                  {getFileIcon(file.fileType)}
-                </div>
-                
-                <div className="file-info">
-                  <div className="file-name">{file.originalName}</div>
-                  <div className="file-meta">
-                    <span className="file-size">{formatFileSize(file.fileSize)}</span>
-                    <span className="file-date">{formatDate(file.uploadDate)}</span>
-                  </div>
-                  <div className="storage-class-badge" 
-                       style={{ backgroundColor: getStorageClassInfo(file.storageClass).color + '20', 
-                               color: getStorageClassInfo(file.storageClass).color }}>
-                    {getStorageClassInfo(file.storageClass).name}
-                  </div>
-                  {file.estimatedMonthlyCost && (
-                    <div className="monthly-cost">
-                      ${file.estimatedMonthlyCost.toFixed(4)}/month
+          {/* Storage Class Breakdown */}
+          <div className="storage-breakdown">
+            <h2>Storage Class Breakdown</h2>
+            <div className="breakdown-grid">
+              {Object.entries(storageClassBreakdown).map(([storageClass, data]) => {
+                const classInfo = getStorageClassInfo(storageClass);
+                return (
+                  <div key={storageClass} className="breakdown-card">
+                    <div className="breakdown-header">
+                      <div className="storage-class-icon" style={{ color: classInfo.color }}>
+                        {classInfo.icon}
+                      </div>
+                      <div className="storage-class-info">
+                        <h3>{classInfo.name}</h3>
+                        <p>{classInfo.description}</p>
+                        <span className="cost-info">{classInfo.cost}</span>
+                      </div>
                     </div>
-                  )}
+                    <div className="breakdown-stats">
+                      <div className="stat">
+                        <span className="stat-label">Files:</span>
+                        <span className="stat-value">{data.count}</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-label">Size:</span>
+                        <span className="stat-value">{formatFileSize(data.totalSize)}</span>
+                      </div>
+                      <div className="stat">
+                        <span className="stat-label">Monthly Cost:</span>
+                        <span className="stat-value">${data.totalCost.toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <button
+                      className="view-files-btn"
+                      onClick={() => setSelectedStorageClass(storageClass)}
+                    >
+                      View Files
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Files Section */}
+          <div className="files-section">
+            <div className="files-header">
+              <div className="files-title">
+                <h2>
+                  {selectedStorageClass === 'all'
+                    ? 'All Files'
+                    : `${getStorageClassInfo(selectedStorageClass).name} Files`
+                  }
+                </h2>
+                <span className="file-count">({sortedFiles.length} files)</span>
+              </div>
+
+              <div className="files-controls">
+                <div className="search-bar">
+                  <FiSearch />
+                  <input
+                    type="text"
+                    placeholder="Search files..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
 
-                <div className="file-actions">
-                  <button
-                    className={`star-btn ${file.isStarred ? 'starred' : ''}`}
-                    aria-label={`${file.isStarred ? 'Unstar' : 'Star'} ${file.originalName}`}
-                    onClick={() => handleStarClick(file)}
+                <div className="filter-controls">
+                  <select
+                    value={selectedStorageClass}
+                    onChange={(e) => setSelectedStorageClass(e.target.value)}
+                    className="storage-class-filter"
                   >
-                    <FiStar />
-                  </button>
-                  <button
-                    className="action-btn"
-                    onClick={() => handleDownload(file)}
-                    aria-label={`Download ${file.originalName}`}
-                    title="Download file"
+                    <option value="all">All Storage Classes</option>
+                    {Object.keys(storageClassBreakdown).map(storageClass => (
+                      <option key={storageClass} value={storageClass}>
+                        {getStorageClassInfo(storageClass).name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="sort-by"
                   >
-                    <FiDownload />
-                  </button>
+                    <option value="size">Sort by Size</option>
+                    <option value="date">Sort by Date</option>
+                    <option value="name">Sort by Name</option>
+                  </select>
+
                   <button
-                    className="action-btn"
-                    onClick={() => handleShareClick(file)}
-                    aria-label={`Share ${file.originalName}`}
-                    title="Share file"
+                    className="sort-order-btn"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   >
-                    <FiShare2 />
+                    {sortOrder === 'asc' ? '↑' : '↓'}
                   </button>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {sortedFiles.length === 0 ? (
+              <div className="empty-state">
+                <FiFile className="empty-icon" />
+                <h3>No files found</h3>
+                <p>
+                  {selectedStorageClass === 'all'
+                    ? 'No files match your search criteria'
+                    : `No files found in ${getStorageClassInfo(selectedStorageClass).name} storage class`
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className={`files-grid ${viewMode}`}>
+                {sortedFiles.map((file) => (
+                  <div key={file.id} className="file-item">
+                    <div className="file-icon">
+                      {getFileIcon(file.fileType)}
+                    </div>
+
+                    <div className="file-info">
+                      <div className="file-name">{file.originalName}</div>
+                      <div className="file-meta">
+                        <span className="file-size">{formatFileSize(file.fileSize)}</span>
+                        <span className="file-date">{formatDate(file.uploadDate)}</span>
+                      </div>
+                      <div className="storage-class-badge"
+                           style={{ backgroundColor: getStorageClassInfo(file.storageClass).color + '20',
+                                   color: getStorageClassInfo(file.storageClass).color }}>
+                        {getStorageClassInfo(file.storageClass).name}
+                      </div>
+                      {file.estimatedMonthlyCost && (
+                        <div className="monthly-cost">
+                          ${file.estimatedMonthlyCost.toFixed(4)}/month
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="file-actions">
+                      <button
+                        className={`star-btn ${file.isStarred ? 'starred' : ''}`}
+                        aria-label={`${file.isStarred ? 'Unstar' : 'Star'} ${file.originalName}`}
+                        onClick={() => handleStarClick(file)}
+                      >
+                        <FiStar />
+                      </button>
+                      <button
+                        className="action-btn"
+                        onClick={() => handleDownload(file)}
+                        aria-label={`Download ${file.originalName}`}
+                        title="Download file"
+                      >
+                        <FiDownload />
+                      </button>
+                      <button
+                        className="action-btn"
+                        onClick={() => handleShareClick(file)}
+                        aria-label={`Share ${file.originalName}`}
+                        title="Share file"
+                      >
+                        <FiShare2 />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      
+        </div>
+      )}
+
       {/* Share Modal */}
       {isShareModalOpen && (
         <ShareModal

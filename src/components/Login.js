@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiCloud } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiCloud } from 'react-icons/fi';
 import { authAPI } from '../services/api';
 import './Auth.css';
 import LoadingScreen from './LoadingScreen';
@@ -57,6 +57,27 @@ const Login = () => {
 
   return (
     <div className="auth-container">
+      <button 
+        onClick={() => navigate('/')} 
+        className="back-button"
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          padding: '8px 16px',
+          background: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '4px',
+          color: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          transition: 'all 0.2s ease',
+          zIndex: 1
+        }}>
+        ← Back
+      </button>
       {loading && <LoadingScreen message="Preparing your SkyCrate..." />}
       <div className="auth-card">
         <div className="auth-header">
