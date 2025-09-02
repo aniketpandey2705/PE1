@@ -1775,12 +1775,12 @@ app.get('/api/billing/current', authenticateToken, async (req, res) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
-    
+
     const files = await readFiles();
     const billing = await readBilling();
     const userFiles = files.filter(f => f.userId === req.user.id && !f.isFolder);
     const userBilling = billing.filter(b => b.userId === req.user.id);
-    
+
     // Calculate current storage usage
     let totalStorageCost = 0;
     userFiles.forEach(file => {
@@ -1788,36 +1788,36 @@ app.get('/api/billing/current', authenticateToken, async (req, res) => {
       const monthlyCost = getStorageClassCost(file.storageClass || 'STANDARD') * sizeInGB;
       totalStorageCost += monthlyCost;
     });
-    
+
     // Calculate request costs for current month
     const monthStart = new Date(currentYear, currentMonth - 1, 1);
     const monthEnd = new Date(currentYear, currentMonth, 0);
-    
+
     const currentMonthBilling = userBilling.filter(b => {
       const activityDate = new Date(b.timestamp);
       return activityDate >= monthStart && activityDate <= monthEnd;
     });
-    
+
     const currentMonthCost = totalStorageCost + currentMonthBilling.reduce((sum, b) => sum + b.cost, 0);
-    
+
     // Calculate last month costs for comparison
     const lastMonthStart = new Date(currentYear, currentMonth - 2, 1);
     const lastMonthEnd = new Date(currentYear, currentMonth - 1, 0);
-    
+
     const lastMonthBilling = userBilling.filter(b => {
       const activityDate = new Date(b.timestamp);
       return activityDate >= lastMonthStart && activityDate <= lastMonthEnd;
     });
-    
+
     const lastMonthCost = totalStorageCost + lastMonthBilling.reduce((sum, b) => sum + b.cost, 0);
-    
+
     // Calculate projected month-end cost
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
     const currentDay = currentDate.getDate();
     const projectedCost = currentMonth === currentDate.getMonth() + 1 && currentYear === currentDate.getFullYear()
       ? (currentMonthCost / currentDay) * daysInMonth
       : currentMonthCost;
-    
+
     // Calculate trend
     let trend = 'stable';
     if (currentMonthCost > lastMonthCost * 1.1) {
@@ -1825,17 +1825,160 @@ app.get('/api/billing/current', authenticateToken, async (req, res) => {
     } else if (currentMonthCost < lastMonthCost * 0.9) {
       trend = 'down';
     }
-    
+
     res.json({
       monthToDate: currentMonthCost,
       projectedMonthEnd: projectedCost,
       lastMonth: lastMonthCost,
       trend: trend
     });
-    
+
   } catch (error) {
     console.error('Get current billing error:', error);
     res.status(500).json({ error: 'Failed to fetch current billing data' });
+  }
+});
+
+// Shared Files API Endpoints
+
+// Get shared files for user
+app.get('/api/shared-files', authenticateToken, async (req, res) => {
+  try {
+    const files = await readFiles();
+    const userSharedFiles = files.filter(f =>
+      f.userId === req.user.id &&
+      f.isShared === true &&
+      (!f.expiryTimestamp || Date.now() < f.expiryTimestamp)
+    );
+
+    res.json(userSharedFiles);
+  } catch (error) {
+    console.error('Get shared files error:', error);
+    res.status(500).json({ error: 'Failed to fetch shared files' });
+  }
+});
+
+// Add shared file for user
+app.post('/api/shared-files', authenticateToken, async (req, res) => {
+  try {
+    const { fileId, expirySeconds, shareUrl } = req.body;
+
+    if (!fileId) {
+      return res.status(400).json({ error: 'File ID is required' });
+    }
+
+    const files = await readFiles();
+    const file = files.find(f => f.id === fileId && f.userId === req.user.id);
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const expiryTimestamp = expirySeconds ? Date.now() + expirySeconds * 1000 : null;
+
+    // Update file with shared properties
+    const updatedFile = {
+      ...file,
+      isShared: true,
+      sharedAt: Date.now(),
+      expiryTimestamp,
+      shareUrl: shareUrl || ''
+    };
+
+    const fileIndex = files.findIndex(f => f.id === fileId);
+    files[fileIndex] = updatedFile;
+    await writeFiles(files);
+
+    res.json(updatedFile);
+  } catch (error) {
+    console.error('Add shared file error:', error);
+    res.status(500).json({ error: 'Failed to add shared file' });
+  }
+});
+
+// Update shared file URL
+app.patch('/api/shared-files/:fileId/url', authenticateToken, async (req, res) => {
+  try {
+    const { shareUrl } = req.body;
+
+    const files = await readFiles();
+    const fileIndex = files.findIndex(f => f.id === req.params.fileId && f.userId === req.user.id);
+
+    if (fileIndex === -1) {
+      return res.status(404).json({ error: 'Shared file not found' });
+    }
+
+    files[fileIndex].shareUrl = shareUrl;
+    await writeFiles(files);
+
+    res.json(files[fileIndex]);
+  } catch (error) {
+    console.error('Update shared file URL error:', error);
+    res.status(500).json({ error: 'Failed to update shared file URL' });
+  }
+});
+
+// Remove shared file
+app.delete('/api/shared-files/:fileId', authenticateToken, async (req, res) => {
+  try {
+    const files = await readFiles();
+    const fileIndex = files.findIndex(f => f.id === req.params.fileId && f.userId === req.user.id);
+
+    if (fileIndex === -1) {
+      return res.status(404).json({ error: 'Shared file not found' });
+    }
+
+    // Remove shared properties but keep the file
+    const file = files[fileIndex];
+    const updatedFile = {
+      ...file,
+      isShared: false,
+      sharedAt: undefined,
+      expiryTimestamp: undefined,
+      shareUrl: undefined
+    };
+
+    files[fileIndex] = updatedFile;
+    await writeFiles(files);
+
+    res.json({ message: 'Shared file removed successfully' });
+  } catch (error) {
+    console.error('Remove shared file error:', error);
+    res.status(500).json({ error: 'Failed to remove shared file' });
+  }
+});
+
+// Clear expired shared files
+app.delete('/api/shared-files/expired', authenticateToken, async (req, res) => {
+  try {
+    const files = await readFiles();
+    const userFiles = files.filter(f => f.userId === req.user.id);
+
+    let expiredCount = 0;
+    const updatedFiles = userFiles.map(file => {
+      if (file.isShared && file.expiryTimestamp && Date.now() > file.expiryTimestamp) {
+        expiredCount++;
+        return {
+          ...file,
+          isShared: false,
+          sharedAt: undefined,
+          expiryTimestamp: undefined,
+          shareUrl: undefined
+        };
+      }
+      return file;
+    });
+
+    // Update files that are not user files (keep them as is)
+    const nonUserFiles = files.filter(f => f.userId !== req.user.id);
+    const allUpdatedFiles = [...nonUserFiles, ...updatedFiles];
+
+    await writeFiles(allUpdatedFiles);
+
+    res.json({ message: `Cleared ${expiredCount} expired shared files` });
+  } catch (error) {
+    console.error('Clear expired shared files error:', error);
+    res.status(500).json({ error: 'Failed to clear expired shared files' });
   }
 });
 

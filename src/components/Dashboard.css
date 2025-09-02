@@ -562,6 +562,48 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
+/* View Mode Toggle for Shared Files */
+.view-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .view-mode-toggle {
+  background: rgba(51, 65, 85, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.view-mode-toggle .view-btn {
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+}
+
+.view-mode-toggle .view-btn.active {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.view-mode-toggle .view-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-primary);
+}
+
 .theme-toggle {
   background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1638,4 +1680,48 @@
 .btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Upload Progress Indicator */
+.upload-progress-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  z-index: var(--z-modal);
+  animation: slideUp 0.3s ease-out;
+}
+
+[data-theme="dark"] .upload-progress-indicator {
+  background: rgba(51, 65, 85, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.upload-progress-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.upload-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(59, 130, 246, 0.1);
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.upload-progress-indicator span {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: var(--text-sm);
 }

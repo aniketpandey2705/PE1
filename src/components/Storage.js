@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShareModal from './ShareModal';
-import {  
-  FiHardDrive, 
-  FiFile, 
-  FiImage, 
-  FiVideo, 
-  FiMusic, 
+import {
+  FiHardDrive,
+  FiFile,
+  FiImage,
+  FiVideo,
+  FiMusic,
   FiArchive,
   FiDownload,
   FiShare2,
@@ -14,7 +14,10 @@ import {
   FiSearch,
   FiPieChart,
   FiDollarSign,
-  FiDatabase
+  FiDatabase,
+  FiGrid,
+  FiList,
+  FiMenu
 } from 'react-icons/fi';
 import { fileAPI } from '../services/api';
 import './Storage.css';
@@ -24,6 +27,11 @@ const Storage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('grid');
+
+  // New: Add view mode toggle buttons handler
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStorageClass, setSelectedStorageClass] = useState('all');
   const [sortBy, setSortBy] = useState('size');
@@ -387,6 +395,31 @@ const Storage = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* View Mode Toggle Buttons */}
+            <div className="view-mode-toggle">
+              <button
+                className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => handleViewModeChange('grid')}
+                title="Grid View"
+              >
+                <FiGrid />
+              </button>
+              <button
+                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => handleViewModeChange('list')}
+                title="List View"
+              >
+                <FiList />
+              </button>
+              <button
+                className={`view-btn ${viewMode === 'small' ? 'active' : ''}`}
+                onClick={() => handleViewModeChange('small')}
+                title="Small Icons View"
+              >
+                <FiMenu />
+              </button>
             </div>
 
             {sortedFiles.length === 0 ? (

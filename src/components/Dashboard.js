@@ -31,6 +31,7 @@ import {
   FiFile
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSharedFiles } from '../contexts/SharedFilesContext';
 import { fileAPI, folderAPI, authAPI } from '../services/api';
 import StorageClassModal from './StorageClassModal';
 import ShareModal from './ShareModal';
@@ -70,6 +71,7 @@ const Dashboard = () => {
   const [selectedFileForShare, setSelectedFileForShare] = useState(null);
   const navigate = useNavigate();
   const { toggleTheme, isDark } = useTheme();
+  const { sharedFiles, addSharedFile, updateSharedFileUrl, removeSharedFile, isLoading: sharedFilesLoading } = useSharedFiles();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -167,11 +169,19 @@ const Dashboard = () => {
   };
 
   const formatDate = (date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    }).format(new Date(date));
+    try {
+      if (!date) return 'Unknown date';
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return 'Invalid date';
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(d);
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Invalid date';
+    }
   };
 
   const removeFile = async (fileId) => {
@@ -448,9 +458,19 @@ const Dashboard = () => {
             <FiStar />
             <span>Starred</span>
           </div>
-          <div className="nav-item">
+          <div
+            className={`nav-item ${currentView === 'shared' ? 'active' : ''}`}
+            onClick={() => setCurrentView('shared')}
+          >
             <FiShare2 />
             <span>Shared</span>
+          </div>
+          <div
+            className={`nav-item ${currentView === 'filetypes' ? 'active' : ''}`}
+            onClick={() => setCurrentView('filetypes')}
+          >
+            <FiGrid />
+            <span>File Types</span>
           </div>
           <div className="nav-item">
             <FiClock />
@@ -561,6 +581,237 @@ const Dashboard = () => {
             <Storage />
           ) : currentView === 'billing' ? (
             <DashboardBilling />
+          ) : currentView === 'shared' ? (
+            <div className="shared-files-view">
+              <div className="files-header">
+                <div className="files-title">
+                  <h2>Shared Files</h2>
+                  <span className="file-count">({sharedFiles.length} items)</span>
+                </div>
+                <div className="files-controls">
+                  <div className="view-mode-toggle">
+                    <button
+                      className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                      onClick={() => setViewMode('grid')}
+                      title="Grid View"
+                    >
+                      <FiGrid />
+                    </button>
+                    <button
+                      className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                      onClick={() => setViewMode('list')}
+                      title="List View"
+                    >
+                      <FiList />
+                    </button>
+                    <button
+                      className={`view-btn ${viewMode === 'small' ? 'active' : ''}`}
+                      onClick={() => setViewMode('small')}
+                      title="Small Icons View"
+                    >
+                      <FiMenu />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {sharedFilesLoading ? (
+                <div className="loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>Loading shared files...</p>
+                </div>
+              ) : sharedFiles.length === 0 ? (
+                <div className="empty-state">
+                  <FiShare2 className="empty-icon" />
+                  <h3>No shared files</h3>
+                  <p>Files you share will appear here</p>
+                </div>
+              ) : (
+                <div className={`files-grid ${viewMode}`}>
+                  {sharedFiles.map((file) => (
+                    <div key={file.id} className="file-item shared-file-item">
+                      <div className="file-icon">
+                        {getFileIcon(file.fileType)}
+                      </div>
+                      <div className="file-info">
+                        <div className="file-name">{file.originalName}</div>
+                        <div className="file-meta">
+                          <div className="file-details">
+                            <span className="file-type">{file.fileType}</span>
+                            <span className="file-size">{formatFileSize(file.fileSize)}</span>
+                            <span className="shared-date">Shared {formatDate(file.sharedAt)}</span>
+                          </div>
+                          <div className="file-actions">
+                            {file.shareUrl && (
+                              <button
+                                className="action-btn"
+                                onClick={() => window.open(file.shareUrl, '_blank')}
+                                title="Open share link"
+                              >
+                                <FiShare2 />
+                              </button>
+                            )}
+                            <button
+                              className="action-btn"
+                              onClick={() => downloadFile(file)}
+                              title="Download file"
+                            >
+                              <FiDownload />
+                            </button>
+                            <button
+                              className="action-btn"
+                              onClick={() => removeSharedFile(file.id)}
+                              title="Remove from shared"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="expiry-info">
+                          {file.expiryTimestamp ? (
+                            Date.now() < file.expiryTimestamp ? (
+                              <span className="time-left">
+                                Expires in {Math.floor((file.expiryTimestamp - Date.now()) / (1000 * 60 * 60))}h {Math.floor(((file.expiryTimestamp - Date.now()) % (1000 * 60 * 60)) / (1000 * 60))}m
+                              </span>
+                            ) : (
+                              <span className="expired">Expired</span>
+                            )
+                          ) : (
+                            <span className="no-expiry">No expiration</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : currentView === 'filetypes' ? (
+            <div className="filetypes-view">
+              <div className="files-header">
+                <div className="files-title">
+                  <h2>File Types</h2>
+                  <span className="file-count">({files.filter(f => !f.isFolder).length} files)</span>
+                </div>
+              </div>
+
+              {files.filter(f => !f.isFolder).length === 0 ? (
+                <div className="empty-state">
+                  <FiGrid className="empty-icon" />
+                  <h3>No files uploaded</h3>
+                  <p>Upload files to see them organized by type</p>
+                </div>
+              ) : (
+                <div className="filetypes-container">
+                  {(() => {
+                    // Group files by type
+                    const fileGroups = {};
+                    files.filter(f => !f.isFolder).forEach(file => {
+                      const extension = file.originalName.split('.').pop()?.toLowerCase() || 'unknown';
+                      let category = 'Other';
+
+                      // Categorize files
+                      if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension)) {
+                        category = 'Images';
+                      } else if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv'].includes(extension)) {
+                        category = 'Videos';
+                      } else if (['mp3', 'wav', 'flac', 'aac', 'ogg'].includes(extension)) {
+                        category = 'Audio';
+                      } else if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension)) {
+                        category = 'Documents';
+                      } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
+                        category = 'Archives';
+                      } else if (['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'scss', 'sass', 'php', 'py', 'java', 'cpp', 'c', 'cs'].includes(extension)) {
+                        category = 'Code';
+                      }
+
+                      if (!fileGroups[category]) {
+                        fileGroups[category] = [];
+                      }
+                      fileGroups[category].push(file);
+                    });
+
+                    return Object.entries(fileGroups).map(([category, categoryFiles]) => (
+                      <div key={category} className="file-category">
+                        <div className="category-header">
+                          <h3>{category}</h3>
+                          <span className="category-count">({categoryFiles.length} files)</span>
+                        </div>
+                        <div className="files-grid grid">
+                          {categoryFiles.map((file) => (
+                            <div
+                              key={file.id}
+                              className={`file-item ${selectedFiles.includes(file.id) ? 'selected' : ''}`}
+                              onClick={() => toggleFileSelection(file.id)}
+                            >
+                              <div className="file-checkbox">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedFiles.includes(file.id)}
+                                  onChange={() => toggleFileSelection(file.id)}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+
+                              <div className="file-icon">
+                                {getFileIcon(file.fileType)}
+                              </div>
+
+                              <div className="file-info">
+                                <div className="file-name">{file.originalName}</div>
+                                <div className="file-meta">
+                                  <div className="file-details">
+                                    <span className="file-type">{file.fileType}</span>
+                                    <span className="file-size">{formatFileSize(file.fileSize)}</span>
+                                    <span className="file-date">{formatDate(file.uploadDate)}</span>
+                                  </div>
+                                  <div className="file-actions" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                      className="action-btn"
+                                      onClick={() => handleShareClick(file)}
+                                      title="Share file"
+                                    >
+                                      <FiShare2 />
+                                    </button>
+                                    <button
+                                      className="action-btn"
+                                      onClick={() => downloadFile(file)}
+                                      title="Download file"
+                                    >
+                                      <FiDownload />
+                                    </button>
+                                    <button
+                                      className={`star-btn ${file.isStarred ? 'starred' : ''}`}
+                                      aria-label={`${file.isStarred ? 'Unstar' : 'Star'} ${file.originalName}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleStar(file.id, file.isStarred);
+                                      }}
+                                    >
+                                      <FiStar />
+                                    </button>
+                                    <button
+                                      className="action-btn"
+                                      aria-label={`Delete ${file.originalName}`}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFile(file.id);
+                                      }}
+                                    >
+                                      <FiTrash2 />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
           ) : (
             <>
               {/* Files and other content */}
@@ -738,6 +989,16 @@ const Dashboard = () => {
           </>
           )}
         </div>
+
+        {/* Upload Progress Indicator */}
+        {uploading && (
+          <div className="upload-progress-indicator">
+            <div className="upload-progress-content">
+              <div className="upload-spinner"></div>
+              <span>Uploading files...</span>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Create Folder Modal */}
@@ -800,6 +1061,9 @@ const Dashboard = () => {
         isOpen={isShareModalOpen}
         onClose={handleShareModalClose}
         fileDetails={selectedFileForShare}
+        onAddSharedFile={addSharedFile}
+        onUpdateSharedFileUrl={updateSharedFileUrl}
+        existingSharedFiles={sharedFiles}
       />
 
       {/* Delete Account Confirmation Modal */}

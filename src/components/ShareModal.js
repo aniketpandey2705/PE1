@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
-import { FiX, FiLink, FiClock, FiCheck, FiCopy, FiAlertCircle } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiX, FiLink, FiClock, FiCheck, FiCopy, FiAlertCircle, FiShare2 } from 'react-icons/fi';
 import { fileAPI } from '../services/api';
 import './ShareModal.css';
 
-const ShareModal = ({ isOpen, onClose, fileDetails }) => {
+const ShareModal = ({ isOpen, onClose, fileDetails, onAddSharedFile, onUpdateSharedFileUrl, existingSharedFiles = [] }) => {
   const [expiryTime, setExpiryTime] = useState('7d'); // Default 7 days
   const [customTime, setCustomTime] = useState({ value: '', unit: 'h' });
   const [shareUrl, setShareUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [sharedFiles, setSharedFiles] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(null);
+
+  // Check if file is already shared
+  const existingSharedFile = existingSharedFiles.find(file => file.id === fileDetails?.id);
+  const isAlreadyShared = !!existingSharedFile;
 
   const convertToSeconds = (time, unit) => {
     const unitToSeconds = {
@@ -42,7 +48,7 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
     setIsLoading(true);
     try {
       let expirySeconds;
-      
+
       if (expiryTime === 'custom') {
         if (!customTime.value) {
           throw new Error('Please enter a valid time value');
@@ -57,10 +63,25 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
         };
         expirySeconds = expiryMap[expiryTime];
       }
-      
+
       const { url } = await fileAPI.generateShareUrl(fileDetails.id, expirySeconds);
       if (!url) throw new Error('No URL in response');
       setShareUrl(url);
+
+      // Add file to global shared files context
+      if (onAddSharedFile) {
+        onAddSharedFile(fileDetails, expirySeconds);
+      }
+
+      // Update the share URL in context
+      if (onUpdateSharedFileUrl) {
+        onUpdateSharedFileUrl(fileDetails.id, url);
+      }
+
+      // Add file to local shared files list for modal display
+      const expiryTimestamp = Date.now() + expirySeconds * 1000;
+      setSharedFiles(prev => [...prev, { ...fileDetails, expiryTimestamp }]);
+      setTimeLeft(expirySeconds);
     } catch (error) {
       console.error('Share URL generation error:', error);
       alert(error.message || error.response?.data?.message || 'Failed to generate share URL');
@@ -68,6 +89,22 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!timeLeft) return;
+
+    const interval = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timeLeft]);
 
   if (!isOpen) return null;
 
@@ -82,6 +119,38 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
         </div>
 
         <div className="modal-content">
+          {isAlreadyShared && !shareUrl && (
+            <div className="existing-share-notice">
+              <div className="notice-header">
+                <FiShare2 />
+                <span>This file is already shared</span>
+              </div>
+              <div className="existing-share-details">
+                <p><strong>Current expiry:</strong> {existingSharedFile.expiryTimestamp ? new Date(existingSharedFile.expiryTimestamp).toLocaleString() : 'No expiry'}</p>
+                {existingSharedFile.shareUrl && (
+                  <p><strong>Share URL:</strong> <a href={existingSharedFile.shareUrl} target="_blank" rel="noopener noreferrer">View Link</a></p>
+                )}
+                <p>You can generate a new share link with different expiry time below.</p>
+              </div>
+            </div>
+          )}
+
+          {sharedFiles.length > 0 && (
+            <div className="shared-files-section">
+              <h3><FiShare2 /> Shared Files</h3>
+              <div className="shared-files-list">
+                {sharedFiles.map((file, index) => (
+                  <div key={index} className="shared-file-item">
+                    <span className="file-name">{file.name}</span>
+                    <span className="time-left">
+                      {timeLeft ? `Expires in ${Math.floor(timeLeft / 3600)}h ${Math.floor((timeLeft % 3600) / 60)}m` : 'Expired'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {shareUrl ? (
             <div className="share-url-container">
               <p className="expiry-note">

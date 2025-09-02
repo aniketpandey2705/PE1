@@ -6,6 +6,7 @@ import Storage from './components/Storage';
 import Login from './components/Login';
 import Register from './components/Register';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { SharedFilesProvider } from './contexts/SharedFilesContext';
 import './App.css';
 
 // Protected Route Component
@@ -23,17 +24,19 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
-          </Routes>
-        </div>
-      </Router>
+      <SharedFilesProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+              <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/storage" element={<ProtectedRoute><Storage /></ProtectedRoute>} />
+            </Routes>
+          </div>
+        </Router>
+      </SharedFilesProvider>
     </ThemeProvider>
   );
 }
