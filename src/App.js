@@ -9,6 +9,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { SharedFilesProvider } from './contexts/SharedFilesContext';
 import './App.css';
 
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');

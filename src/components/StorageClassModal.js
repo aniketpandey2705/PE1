@@ -28,55 +28,91 @@ const StorageClassModal = ({
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [activeTab, setActiveTab] = useState('recommended'); // 'recommended' or 'all'
 
-  // Real AWS S3 pricing per GB per month (as of 2024)
+  // User-friendly storage classes with tiered pricing
   const STORAGE_PRICING = {
     STANDARD: {
-      pricePerGB: 0.023,
-      displayName: 'Standard',
-      description: 'Frequently accessed data with immediate retrieval',
-      retrievalTime: 'Immediate',
+      basePricePerGB: 0.023,
+      pricePerGB: 0.029, // 25% margin
+      displayName: '⚡ Lightning Fast',
+      friendlyName: 'Lightning Fast Storage',
+      description: 'Perfect for files you access daily - photos, documents, and active projects',
+      retrievalTime: 'Instant',
       minimumDuration: 'None',
-      savingsVsStandard: 0
+      savingsVsStandard: 0,
+      margin: 25,
+      icon: '⚡',
+      color: '#3B82F6',
+      tagline: 'For files you use every day'
     },
     STANDARD_IA: {
-      pricePerGB: 0.0125,
-      displayName: 'Standard-IA',
-      description: 'Infrequently accessed data with immediate retrieval',
-      retrievalTime: 'Immediate',
+      basePricePerGB: 0.0125,
+      pricePerGB: 0.017, // 35% margin
+      displayName: '💎 Smart Saver',
+      friendlyName: 'Smart Saver Storage',
+      description: 'Great for large files you don\'t access often - smart optimization saves money',
+      retrievalTime: 'Instant',
       minimumDuration: '30 days',
-      savingsVsStandard: 46
+      savingsVsStandard: 46,
+      margin: 35,
+      icon: '💎',
+      color: '#10B981',
+      tagline: 'Perfect for large files'
     },
     ONEZONE_IA: {
-      pricePerGB: 0.01,
-      displayName: 'One Zone-IA',
-      description: 'Infrequently accessed data in single AZ',
-      retrievalTime: 'Immediate',
+      basePricePerGB: 0.01,
+      pricePerGB: 0.014, // 40% margin
+      displayName: '🎯 Budget Smart',
+      friendlyName: 'Budget Smart Storage',
+      description: 'Most affordable option for non-critical files with instant access',
+      retrievalTime: 'Instant',
       minimumDuration: '30 days',
-      savingsVsStandard: 57
+      savingsVsStandard: 57,
+      margin: 40,
+      icon: '🎯',
+      color: '#F59E0B',
+      tagline: 'Maximum savings'
     },
     GLACIER_IR: {
-      pricePerGB: 0.004,
-      displayName: 'Glacier Instant Retrieval',
-      description: 'Archive data with immediate retrieval',
-      retrievalTime: 'Immediate',
+      basePricePerGB: 0.004,
+      pricePerGB: 0.006, // 45% margin
+      displayName: '🏔️ Archive Pro',
+      friendlyName: 'Archive Pro Storage',
+      description: 'Ultra-low cost archive with instant access - perfect for important backups',
+      retrievalTime: 'Instant',
       minimumDuration: '90 days',
-      savingsVsStandard: 83
+      savingsVsStandard: 83,
+      margin: 45,
+      icon: '🏔️',
+      color: '#8B5CF6',
+      tagline: 'Ultra-low cost backups'
     },
     GLACIER: {
-      pricePerGB: 0.0036,
-      displayName: 'Glacier',
-      description: 'Long-term archive with 1-5 minute retrieval',
+      basePricePerGB: 0.0036,
+      pricePerGB: 0.005, // 50% margin
+      displayName: '🧊 Deep Freeze',
+      friendlyName: 'Deep Freeze Storage',
+      description: 'Long-term storage for files you rarely access - massive savings',
       retrievalTime: '1-5 minutes',
       minimumDuration: '90 days',
-      savingsVsStandard: 84
+      savingsVsStandard: 84,
+      margin: 50,
+      icon: '🧊',
+      color: '#EC4899',
+      tagline: 'Long-term storage'
     },
     DEEP_ARCHIVE: {
-      pricePerGB: 0.00099,
-      displayName: 'Deep Archive',
-      description: 'Long-term backup with 12-hour retrieval',
+      basePricePerGB: 0.00099,
+      pricePerGB: 0.002, // 60% margin
+      displayName: '🏛️ Vault Keeper',
+      friendlyName: 'Vault Keeper Storage',
+      description: 'Ultimate long-term storage - cheapest option for data you almost never need',
       retrievalTime: '12 hours',
       minimumDuration: '180 days',
-      savingsVsStandard: 96
+      savingsVsStandard: 96,
+      margin: 60,
+      icon: '🏛️',
+      color: '#6B7280',
+      tagline: 'Digital safety deposit box'
     }
   };
 

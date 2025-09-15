@@ -305,3 +305,27 @@
   from { transform: translateY(-20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* Remove button styles */
+.remove-button {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--error);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.remove-button:hover {
+  background: #dc2626;
+}
+
+.remove-button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}

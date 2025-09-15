@@ -36,6 +36,7 @@ import { fileAPI, folderAPI, authAPI } from '../services/api';
 import StorageClassModal from './StorageClassModal';
 import ShareModal from './ShareModal';
 import DashboardBilling from './DashboardBilling';
+import VersionHistory from './VersionHistory';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -69,9 +70,11 @@ const Dashboard = () => {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedFileForShare, setSelectedFileForShare] = useState(null);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [selectedFileForVersions, setSelectedFileForVersions] = useState(null);
   const navigate = useNavigate();
   const { toggleTheme, isDark } = useTheme();
-  const { sharedFiles, addSharedFile, updateSharedFileUrl, removeSharedFile, isLoading: sharedFilesLoading } = useSharedFiles();
+  const { sharedFiles, addSharedFile, updateSharedFileUrl, removeSharedFile, isLoading: sharedFilesLoading, clearSharedFilesCache } = useSharedFiles();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -117,6 +120,21 @@ const Dashboard = () => {
   const handleShareModalClose = () => {
     setIsShareModalOpen(false);
     setSelectedFileForShare(null);
+  };
+
+  const handleVersionHistoryClick = (file) => {
+    setSelectedFileForVersions(file);
+    setIsVersionHistoryOpen(true);
+  };
+
+  const handleVersionHistoryClose = () => {
+    setIsVersionHistoryOpen(false);
+    setSelectedFileForVersions(null);
+  };
+
+  const handleVersionRestore = () => {
+    // Refresh files after version restore
+    fetchFiles(currentFolderId);
   };
 
   const uploadFiles = async (filesToUpload, storageClass = null) => {
@@ -304,6 +322,9 @@ const Dashboard = () => {
   };
 
   const handleLogout = () => {
+    // Clear shared files cache before logout
+    clearSharedFilesCache();
+    
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
@@ -313,14 +334,40 @@ const Dashboard = () => {
     setDeletingAccount(true);
     try {
       await authAPI.deleteAccount();
+      
       // Clear local storage
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      
+      // Show success message
+      alert('Account and all data deleted successfully. You will be redirected to the registration page.');
+      
       // Redirect to register page
       navigate('/register');
     } catch (error) {
       console.error('Delete account error:', error);
-      alert('Failed to delete account. Please try again.');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to delete account. Please try again.';
+      
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error occurred while deleting account. Please contact support if this persists.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Access denied. Please log in again and try again.';
+      } else if (!navigator.onLine) {
+        errorMessage = 'No internet connection. Please check your connection and try again.';
+      }
+      
+      alert(errorMessage);
+      
+      // If it's an auth error, redirect to login
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
     } finally {
       setDeletingAccount(false);
       setShowDeleteAccountModal(false);
@@ -758,7 +805,14 @@ const Dashboard = () => {
                               </div>
 
                               <div className="file-info">
-                                <div className="file-name">{file.originalName}</div>
+                                <div className="file-name">
+                                  {file.originalName}
+                                  {file.totalVersions > 1 && (
+                                    <span className="version-badge" title={`${file.totalVersions} versions`}>
+                                      v{file.currentVersion}
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="file-meta">
                                   <div className="file-details">
                                     <span className="file-type">{file.fileType}</span>
@@ -773,6 +827,15 @@ const Dashboard = () => {
                                     >
                                       <FiShare2 />
                                     </button>
+                                    {!file.isFolder && (
+                                      <button
+                                        className="action-btn"
+                                        onClick={() => handleVersionHistoryClick(file)}
+                                        title="Version history"
+                                      >
+                                        <FiClock />
+                                      </button>
+                                    )}
                                     <button
                                       className="action-btn"
                                       onClick={() => downloadFile(file)}
@@ -929,6 +992,11 @@ const Dashboard = () => {
                       <div className="file-info">
                         <div className="file-name">
                           {item.isFolder ? item.folderName : item.originalName}
+                          {!item.isFolder && item.totalVersions > 1 && (
+                            <span className="version-badge" title={`${item.totalVersions} versions`}>
+                              v{item.currentVersion}
+                            </span>
+                          )}
                         </div>
                         <div className="file-meta">
                           {item.isFolder ? (
@@ -947,6 +1015,13 @@ const Dashboard = () => {
                                   title="Share file"
                                 >
                                   <FiShare2 />
+                                </button>
+                                <button
+                                  className="action-btn"
+                                  onClick={() => handleVersionHistoryClick(item)}
+                                  title="Version history"
+                                >
+                                  <FiClock />
                                 </button>
                                 <button
                                   className="action-btn"
@@ -1065,6 +1140,16 @@ const Dashboard = () => {
         onUpdateSharedFileUrl={updateSharedFileUrl}
         existingSharedFiles={sharedFiles}
       />
+
+      {/* Version History Modal */}
+      {isVersionHistoryOpen && selectedFileForVersions && (
+        <VersionHistory
+          fileId={selectedFileForVersions.id}
+          fileName={selectedFileForVersions.originalName}
+          onClose={handleVersionHistoryClose}
+          onVersionRestore={handleVersionRestore}
+        />
+      )}
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteAccountModal && (

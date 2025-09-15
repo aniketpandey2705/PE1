@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiLink, FiClock, FiCheck, FiCopy, FiAlertCircle, FiShare2 } from 'react-icons/fi';
+import { FiX, FiClock, FiCheck, FiCopy, FiShare2 } from 'react-icons/fi';
 import { fileAPI } from '../services/api';
+import { useSharedFiles } from '../contexts/SharedFilesContext';
 import './ShareModal.css';
 
-const ShareModal = ({ isOpen, onClose, fileDetails, onAddSharedFile, onUpdateSharedFileUrl, existingSharedFiles = [] }) => {
+const ShareModal = ({ isOpen, onClose, fileDetails }) => {
+  const { sharedFiles, addSharedFile, updateSharedFileUrl, removeSharedFile } = useSharedFiles();
+  
   const [expiryTime, setExpiryTime] = useState('7d'); // Default 7 days
   const [customTime, setCustomTime] = useState({ value: '', unit: 'h' });
   const [shareUrl, setShareUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [sharedFiles, setSharedFiles] = useState([]);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
-  // Check if file is already shared
-  const existingSharedFile = existingSharedFiles.find(file => file.id === fileDetails?.id);
+  // Check if file is already shared using context
+  const existingSharedFile = sharedFiles.find(file => file.fileId === fileDetails?.id);
   const isAlreadyShared = !!existingSharedFile;
+
 
   const convertToSeconds = (time, unit) => {
     const unitToSeconds = {
@@ -66,27 +70,36 @@ const ShareModal = ({ isOpen, onClose, fileDetails, onAddSharedFile, onUpdateSha
 
       const { url } = await fileAPI.generateShareUrl(fileDetails.id, expirySeconds);
       if (!url) throw new Error('No URL in response');
+      
+      // Create temp file object with shareUrl
+      const fileWithUrl = { ...fileDetails, shareUrl: url };
+      
+      // Add/update in context
+      await addSharedFile(fileWithUrl, expirySeconds);
+      
       setShareUrl(url);
-
-      // Add file to global shared files context
-      if (onAddSharedFile) {
-        onAddSharedFile(fileDetails, expirySeconds);
-      }
-
-      // Update the share URL in context
-      if (onUpdateSharedFileUrl) {
-        onUpdateSharedFileUrl(fileDetails.id, url);
-      }
-
-      // Add file to local shared files list for modal display
-      const expiryTimestamp = Date.now() + expirySeconds * 1000;
-      setSharedFiles(prev => [...prev, { ...fileDetails, expiryTimestamp }]);
       setTimeLeft(expirySeconds);
     } catch (error) {
       console.error('Share URL generation error:', error);
       alert(error.message || error.response?.data?.message || 'Failed to generate share URL');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRemoveSharedFile = async () => {
+    setIsRemoving(true);
+    try {
+      await removeSharedFile(fileDetails.id);
+
+      // Reset modal state
+      setShareUrl('');
+      setTimeLeft(null);
+    } catch (error) {
+      console.error('Remove shared file error:', error);
+      alert('Failed to remove shared file');
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -137,13 +150,18 @@ const ShareModal = ({ isOpen, onClose, fileDetails, onAddSharedFile, onUpdateSha
 
           {sharedFiles.length > 0 && (
             <div className="shared-files-section">
-              <h3><FiShare2 /> Shared Files</h3>
+              <h3><FiShare2 /> Your Shared Files</h3>
               <div className="shared-files-list">
-                {sharedFiles.map((file, index) => (
-                  <div key={index} className="shared-file-item">
-                    <span className="file-name">{file.name}</span>
+                {sharedFiles.map((file) => (
+                  <div key={file.id} className="shared-file-item">
+                    <span className="file-name">{file.originalName || file.fileName}</span>
                     <span className="time-left">
-                      {timeLeft ? `Expires in ${Math.floor(timeLeft / 3600)}h ${Math.floor((timeLeft % 3600) / 60)}m` : 'Expired'}
+                      {file.expiryTimestamp ?
+                        (Date.now() < file.expiryTimestamp ?
+                          `Expires ${new Date(file.expiryTimestamp).toLocaleDateString()}` :
+                          'Expired') :
+                        'No expiry'
+                      }
                     </span>
                   </div>
                 ))}
@@ -218,13 +236,23 @@ const ShareModal = ({ isOpen, onClose, fileDetails, onAddSharedFile, onUpdateSha
                 </div>
               )}
 
-              <button 
+              <button
                 className="generate-button"
                 onClick={generateShareUrl}
                 disabled={isLoading || (expiryTime === 'custom' && !customTime.value)}
               >
                 {isLoading ? 'Generating...' : 'Generate Share Link'}
               </button>
+
+              {isAlreadyShared && shareUrl && (
+                <button
+                  className="remove-button"
+                  onClick={handleRemoveSharedFile}
+                  disabled={isRemoving}
+                >
+                  {isRemoving ? 'Removing...' : 'Remove Share'}
+                </button>
+              )}
             </>
           )}
         </div>

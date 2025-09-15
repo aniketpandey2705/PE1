@@ -154,9 +154,12 @@ export const fileAPI = {
   },
 
   // Generate share URL
-  generateShareUrl: async (fileId, expiryTime) => {
-    const response = await api.post(`/files/${fileId}/share`, { expiryTime });
-    return response.data;
+  generateShareUrl: async (fileId, expirySeconds) => {
+    const response = await api.post('/shared-files', { 
+      fileId, 
+      expirySeconds
+    });
+    return { url: response.data.shareUrl };
   },
 };
 
@@ -181,10 +184,53 @@ export const folderAPI = {
   },
 };
 
+// Shared Files API
+export const sharedFilesAPI = {
+  // Get shared files
+  getSharedFiles: async () => {
+    const response = await api.get('/shared-files');
+    return response.data;
+  },
+
+  // Share a file (generates AWS presigned URL)
+  shareFile: async (fileId, expirySeconds = null) => {
+    const response = await api.post('/shared-files', { fileId, expirySeconds });
+    return response.data;
+  },
+
+  // Get shared file info
+  getSharedFileInfo: async (fileId) => {
+    const response = await api.get(`/shared-files/${fileId}/info`);
+    return response.data;
+  },
+
+  // Remove shared file
+  removeSharedFile: async (fileId) => {
+    const response = await api.delete(`/shared-files/${fileId}`);
+    return response.data;
+  },
+
+  // Clear expired shared files
+  clearExpiredFiles: async () => {
+    const response = await api.delete('/shared-files/expired');
+    return response.data;
+  },
+};
+
 // Billing API
 export const billingAPI = {
   getBillingDetails: async () => {
     const response = await api.get('/billing/details');
+    return response.data;
+  },
+
+  getBillingHistory: async () => {
+    const response = await api.get('/billing/history');
+    return response.data;
+  },
+
+  getCurrentUsage: async () => {
+    const response = await api.get('/billing/usage');
     return response.data;
   },
 };

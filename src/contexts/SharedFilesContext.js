@@ -13,10 +13,25 @@ export const useSharedFiles = () => {
 export const SharedFilesProvider = ({ children }) => {
   const [sharedFiles, setSharedFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   // Get auth token from localStorage
   const getAuthToken = () => {
     return localStorage.getItem('token');
+  };
+
+  // Get current user ID from localStorage
+  const getCurrentUserId = () => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        return user.id;
+      }
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+    }
+    return null;
   };
 
   // API call helper
@@ -40,40 +55,89 @@ export const SharedFilesProvider = ({ children }) => {
     return response.json();
   };
 
-  // Load shared files from backend on mount
+  // Load shared files from backend
+  const loadSharedFiles = async () => {
+    try {
+      setIsLoading(true);
+      const data = await apiCall('/shared-files');
+      setSharedFiles(data);
+    } catch (error) {
+      console.error('Error loading shared files from backend:', error);
+      // Fallback to empty array if API fails
+      setSharedFiles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load shared files on mount and when user changes
   useEffect(() => {
-    const loadSharedFiles = async () => {
-      try {
-        setIsLoading(true);
-        const data = await apiCall('/shared-files');
-        setSharedFiles(data);
-      } catch (error) {
-        console.error('Error loading shared files from backend:', error);
-        // Fallback to empty array if API fails
-        setSharedFiles([]);
-      } finally {
-        setIsLoading(false);
+    const token = getAuthToken();
+    const userId = getCurrentUserId();
+    
+    if (token && userId) {
+      // Check if user has changed
+      if (currentUserId !== userId) {
+        console.log('User changed, reloading shared files:', { from: currentUserId, to: userId });
+        setCurrentUserId(userId);
+        setSharedFiles([]); // Clear previous user's data immediately
+        loadSharedFiles();
+      } else if (currentUserId === userId && sharedFiles.length === 0) {
+        // Same user but no data loaded yet
+        loadSharedFiles();
+      }
+    } else {
+      // No token or user - clear everything
+      setCurrentUserId(null);
+      setSharedFiles([]);
+      setIsLoading(false);
+    }
+  }, [currentUserId]); // Re-run when currentUserId changes
+
+  // Monitor for user/token changes
+  useEffect(() => {
+    const checkUserChange = () => {
+      const userId = getCurrentUserId();
+      const token = getAuthToken();
+      
+      if (!token || !userId) {
+        // User logged out
+        if (currentUserId !== null) {
+          console.log('User logged out, clearing shared files');
+          setCurrentUserId(null);
+          setSharedFiles([]);
+          setIsLoading(false);
+        }
+      } else if (currentUserId !== userId) {
+        // User changed
+        console.log('User changed detected:', { from: currentUserId, to: userId });
+        setCurrentUserId(userId);
       }
     };
 
-    const token = getAuthToken();
-    if (token) {
-      loadSharedFiles();
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
+    // Check immediately
+    checkUserChange();
+
+    // Set up interval to check for changes (in case of manual localStorage changes)
+    const interval = setInterval(checkUserChange, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentUserId]);
 
   const addSharedFile = async (file, expirySeconds) => {
     try {
+      console.log(`🔗 Generating AWS presigned URL for file: ${file.originalName}`);
+      console.log(`⏰ Expiry: ${expirySeconds ? `${expirySeconds}s` : 'Default (1 hour)'}`);
+      
       const data = await apiCall('/shared-files', {
         method: 'POST',
         body: JSON.stringify({
           fileId: file.id,
-          expirySeconds,
-          shareUrl: file.shareUrl || ''
+          expirySeconds
         })
       });
+
+      console.log(`✅ AWS presigned URL generated: ${data.shareUrl}`);
 
       setSharedFiles(prev => {
         // Check if file is already shared, update if so
@@ -88,7 +152,7 @@ export const SharedFilesProvider = ({ children }) => {
 
       return data;
     } catch (error) {
-      console.error('Error adding shared file:', error);
+      console.error('Error generating AWS share URL:', error);
       throw error;
     }
   };
@@ -133,12 +197,21 @@ export const SharedFilesProvider = ({ children }) => {
       });
 
       // Reload shared files after clearing expired ones
-      const data = await apiCall('/shared-files');
-      setSharedFiles(data);
+      await loadSharedFiles();
     } catch (error) {
       console.error('Error clearing expired files:', error);
       throw error;
     }
+  };
+
+  const refreshSharedFiles = async () => {
+    await loadSharedFiles();
+  };
+
+  const clearSharedFilesCache = () => {
+    setSharedFiles([]);
+    setCurrentUserId(null);
+    setIsLoading(false);
   };
 
   const value = {
@@ -147,7 +220,10 @@ export const SharedFilesProvider = ({ children }) => {
     addSharedFile,
     updateSharedFileUrl,
     removeSharedFile,
-    clearExpiredFiles
+    clearExpiredFiles,
+    refreshSharedFiles,
+    clearSharedFilesCache,
+    currentUserId
   };
 
   return (

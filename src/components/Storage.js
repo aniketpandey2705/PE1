@@ -20,13 +20,17 @@ import {
   FiMenu
 } from 'react-icons/fi';
 import { fileAPI } from '../services/api';
+import { useSharedFiles } from '../contexts/SharedFilesContext';
 import './Storage.css';
 
 const Storage = () => {
+  const { sharedFiles: sharedFilesFromContext, isLoading: sharedLoading } = useSharedFiles();
+  
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [viewMode, setViewMode] = useState('grid');
+  const [activeSection, setActiveSection] = useState('all'); // 'all' or 'shared'
 
   // New: Add view mode toggle buttons handler
   const handleViewModeChange = (mode) => {
@@ -99,6 +103,15 @@ const Storage = () => {
     setIsShareModalOpen(true);
   };
 
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+    setSearchQuery('');
+    setSelectedStorageClass('all');
+  };
+
+  const currentFiles = activeSection === 'shared' ? sharedFilesFromContext : files;
+  const currentLoading = activeSection === 'shared' ? sharedLoading : loading;
+
   const handleStarClick = async (file) => {
     try {
       const updatedFile = await fileAPI.toggleStar(file.id);
@@ -131,52 +144,76 @@ const Storage = () => {
   const getStorageClassInfo = (storageClass) => {
     const storageClasses = {
       'STANDARD': {
-        name: 'Standard',
-        description: 'Frequently accessed files',
-        cost: '$0.023/GB/month',
+        name: '⚡ Lightning Fast',
+        friendlyName: 'Lightning Fast Storage',
+        description: 'Perfect for files you access daily',
+        baseCost: '$0.023/GB/month',
+        cost: '$0.029/GB/month',
+        margin: '25%',
         color: '#3B82F6',
-        icon: <FiDatabase />
+        icon: <FiDatabase />,
+        emoji: '⚡'
       },
       'STANDARD_IA': {
-        name: 'Standard-IA',
-        description: 'Infrequently accessed files',
-        cost: '$0.0125/GB/month',
+        name: '💎 Smart Saver',
+        friendlyName: 'Smart Saver Storage',
+        description: 'Great for large files, smart optimization',
+        baseCost: '$0.0125/GB/month',
+        cost: '$0.017/GB/month',
+        margin: '35%',
         color: '#10B981',
-        icon: <FiDatabase />
+        icon: <FiDatabase />,
+        emoji: '💎'
       },
       'ONEZONE_IA': {
-        name: 'One Zone-IA',
-        description: 'Non-critical, infrequent access',
-        cost: '$0.01/GB/month',
+        name: '🎯 Budget Smart',
+        friendlyName: 'Budget Smart Storage',
+        description: 'Most affordable for non-critical files',
+        baseCost: '$0.01/GB/month',
+        cost: '$0.014/GB/month',
+        margin: '40%',
         color: '#F59E0B',
-        icon: <FiDatabase />
+        icon: <FiDatabase />,
+        emoji: '🎯'
       },
       'GLACIER_IR': {
-        name: 'Glacier Instant Retrieval',
-        description: 'Archive with instant retrieval',
-        cost: '$0.004/GB/month',
+        name: '🏔️ Archive Pro',
+        friendlyName: 'Archive Pro Storage',
+        description: 'Ultra-low cost with instant access',
+        baseCost: '$0.004/GB/month',
+        cost: '$0.006/GB/month',
+        margin: '45%',
         color: '#8B5CF6',
-        icon: <FiDatabase />
+        icon: <FiDatabase />,
+        emoji: '🏔️'
       },
       'GLACIER': {
-        name: 'Glacier',
-        description: 'Long-term archive',
-        cost: '$0.0036/GB/month',
+        name: '🧊 Deep Freeze',
+        friendlyName: 'Deep Freeze Storage',
+        description: 'Long-term storage, massive savings',
+        baseCost: '$0.0036/GB/month',
+        cost: '$0.005/GB/month',
+        margin: '50%',
         color: '#EC4899',
-        icon: <FiDatabase />
+        icon: <FiDatabase />,
+        emoji: '🧊'
       },
       'DEEP_ARCHIVE': {
-        name: 'Deep Archive',
-        description: 'Long-term backup',
-        cost: '$0.00099/GB/month',
+        name: '🏛️ Vault Keeper',
+        friendlyName: 'Vault Keeper Storage',
+        description: 'Ultimate long-term storage',
+        baseCost: '$0.00099/GB/month',
+        cost: '$0.002/GB/month',
+        margin: '60%',
         color: '#6B7280',
-        icon: <FiDatabase />
+        icon: <FiDatabase />,
+        emoji: '🏛️'
       }
     };
     return storageClasses[storageClass] || storageClasses['STANDARD'];
   };
 
-  const filteredFiles = files.filter(file => {
+  const filteredFiles = currentFiles.filter(file => {
     // Add null checks to prevent errors
     if (!file || !file.originalName) return false;
     
@@ -213,31 +250,63 @@ const Storage = () => {
     }
   });
 
-  const storageClassBreakdown = files.reduce((acc, file) => {
-    // Add null checks to prevent errors
-    if (!file) return acc;
-    
-    const storageClass = file.storageClass || 'STANDARD';
-    if (!acc[storageClass]) {
-      acc[storageClass] = {
-        count: 0,
-        totalSize: 0,
-        totalCost: 0,
-        files: []
-      };
-    }
-    acc[storageClass].count++;
-    acc[storageClass].totalSize += (file.fileSize || 0);
-    acc[storageClass].totalCost += (file.estimatedMonthlyCost || 0);
-    acc[storageClass].files.push(file);
-    return acc;
-  }, {});
+  const storageClassBreakdown = activeSection === 'shared'
+    ? {} // No breakdown for shared section
+    : files.reduce((acc, file) => {
+        // Add null checks to prevent errors
+        if (!file) return acc;
+        
+        const storageClass = file.storageClass || 'STANDARD';
+        if (!acc[storageClass]) {
+          acc[storageClass] = {
+            count: 0,
+            totalSize: 0,
+            totalCost: 0,
+            files: []
+          };
+        }
+        acc[storageClass].count++;
+        acc[storageClass].totalSize += (file.fileSize || 0);
+        acc[storageClass].totalCost += (file.estimatedMonthlyCost || 0);
+        acc[storageClass].files.push(file);
+        return acc;
+      }, {});
 
-  const totalStorage = files.reduce((sum, file) => sum + (file?.fileSize || 0), 0);
-  const totalMonthlyCost = files.reduce((sum, file) => sum + (file?.estimatedMonthlyCost || 0), 0);
+  const totalStorage = activeSection === 'shared'
+    ? sharedFilesFromContext.reduce((sum, file) => sum + (file?.fileSize || 0), 0)
+    : files.reduce((sum, file) => sum + (file?.fileSize || 0), 0);
+  const totalMonthlyCost = activeSection === 'shared'
+    ? sharedFilesFromContext.reduce((sum, file) => sum + (file?.estimatedMonthlyCost || 0), 0)
+    : files.reduce((sum, file) => sum + (file?.estimatedMonthlyCost || 0), 0);
 
   return (
     <div className="storage-page">
+      <div className="storage-sidebar">
+        <div className="sidebar-header">
+          <h2>Storage</h2>
+        </div>
+        <nav className="sidebar-nav">
+          <button
+            className={`nav-item ${activeSection === 'all' ? 'active' : ''}`}
+            onClick={() => handleSectionChange('all')}
+          >
+            <FiHardDrive />
+            <span>All Files</span>
+          </button>
+          <button
+            className={`nav-item ${activeSection === 'shared' ? 'active' : ''}`}
+            onClick={() => handleSectionChange('shared')}
+          >
+            <FiShare2 />
+            <span>Shared Files</span>
+            {sharedFilesFromContext.length > 0 && (
+              <span className="badge">{sharedFilesFromContext.length}</span>
+            )}
+          </button>
+        </nav>
+      </div>
+
+      <div className="storage-main">
 
 
       {loading ? (
@@ -344,9 +413,11 @@ const Storage = () => {
             <div className="files-header">
               <div className="files-title">
                 <h2>
-                  {selectedStorageClass === 'all'
-                    ? 'All Files'
-                    : `${getStorageClassInfo(selectedStorageClass).name} Files`
+                  {activeSection === 'shared'
+                    ? 'Shared Files'
+                    : selectedStorageClass === 'all'
+                      ? 'All Files'
+                      : `${getStorageClassInfo(selectedStorageClass).name} Files`
                   }
                 </h2>
                 <span className="file-count">({sortedFiles.length} files)</span>
@@ -369,12 +440,16 @@ const Storage = () => {
                     onChange={(e) => setSelectedStorageClass(e.target.value)}
                     className="storage-class-filter"
                   >
-                    <option value="all">All Storage Classes</option>
-                    {Object.keys(storageClassBreakdown).map(storageClass => (
-                      <option key={storageClass} value={storageClass}>
-                        {getStorageClassInfo(storageClass).name}
-                      </option>
-                    ))}
+                    {activeSection === 'shared' ? null : (
+                      <>
+                        <option value="all">All Storage Classes</option>
+                        {Object.keys(storageClassBreakdown).map(storageClass => (
+                          <option key={storageClass} value={storageClass}>
+                            {getStorageClassInfo(storageClass).name}
+                          </option>
+                        ))}
+                      </>
+                    )}
                   </select>
 
                   <select
@@ -500,6 +575,7 @@ const Storage = () => {
           fileDetails={selectedFile}
         />
       )}
+    </div>
     </div>
   );
 };
