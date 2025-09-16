@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const SharedFilesContext = createContext();
 
@@ -56,7 +56,7 @@ export const SharedFilesProvider = ({ children }) => {
   };
 
   // Load shared files from backend
-  const loadSharedFiles = async () => {
+  const loadSharedFiles = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await apiCall('/shared-files');
@@ -68,33 +68,37 @@ export const SharedFilesProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // No dependencies needed
 
-  // Load shared files on mount and when user changes
+  // Initialize on mount
   useEffect(() => {
     const token = getAuthToken();
     const userId = getCurrentUserId();
     
     if (token && userId) {
-      // Check if user has changed
-      if (currentUserId !== userId) {
-        console.log('User changed, reloading shared files:', { from: currentUserId, to: userId });
-        setCurrentUserId(userId);
-        setSharedFiles([]); // Clear previous user's data immediately
-        loadSharedFiles();
-      } else if (currentUserId === userId && sharedFiles.length === 0) {
-        // Same user but no data loaded yet
-        loadSharedFiles();
-      }
+      setCurrentUserId(userId);
+      loadSharedFiles();
     } else {
-      // No token or user - clear everything
       setCurrentUserId(null);
       setSharedFiles([]);
       setIsLoading(false);
     }
-  }, [currentUserId]); // Re-run when currentUserId changes
+  }, []); // Only run on mount
 
-  // Monitor for user/token changes
+  // Handle user changes
+  useEffect(() => {
+    const token = getAuthToken();
+    const userId = getCurrentUserId();
+    
+    if (currentUserId && userId && currentUserId !== userId) {
+      console.log('User changed, reloading shared files:', { from: currentUserId, to: userId });
+      setCurrentUserId(userId);
+      setSharedFiles([]);
+      loadSharedFiles();
+    }
+  }, [currentUserId, loadSharedFiles]);
+
+  // Monitor for user/token changes (less frequent to avoid performance issues)
   useEffect(() => {
     const checkUserChange = () => {
       const userId = getCurrentUserId();
@@ -108,21 +112,20 @@ export const SharedFilesProvider = ({ children }) => {
           setSharedFiles([]);
           setIsLoading(false);
         }
-      } else if (currentUserId !== userId) {
+      } else if (currentUserId && currentUserId !== userId) {
         // User changed
         console.log('User changed detected:', { from: currentUserId, to: userId });
         setCurrentUserId(userId);
+        setSharedFiles([]);
+        loadSharedFiles();
       }
     };
 
-    // Check immediately
-    checkUserChange();
-
-    // Set up interval to check for changes (in case of manual localStorage changes)
-    const interval = setInterval(checkUserChange, 1000);
+    // Set up interval to check for changes (less frequent - every 5 seconds)
+    const interval = setInterval(checkUserChange, 5000);
 
     return () => clearInterval(interval);
-  }, [currentUserId]);
+  }, [currentUserId, loadSharedFiles]);
 
   const addSharedFile = async (file, expirySeconds) => {
     try {
@@ -190,7 +193,7 @@ export const SharedFilesProvider = ({ children }) => {
     }
   };
 
-  const clearExpiredFiles = async () => {
+  const clearExpiredFiles = useCallback(async () => {
     try {
       await apiCall('/shared-files/expired', {
         method: 'DELETE'
@@ -202,11 +205,11 @@ export const SharedFilesProvider = ({ children }) => {
       console.error('Error clearing expired files:', error);
       throw error;
     }
-  };
+  }, [loadSharedFiles]);
 
-  const refreshSharedFiles = async () => {
+  const refreshSharedFiles = useCallback(async () => {
     await loadSharedFiles();
-  };
+  }, [loadSharedFiles]);
 
   const clearSharedFilesCache = () => {
     setSharedFiles([]);

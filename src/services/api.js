@@ -161,6 +161,24 @@ export const fileAPI = {
     });
     return { url: response.data.shareUrl };
   },
+
+  // Change storage class for existing file
+  changeStorageClass: async (fileId, storageClass) => {
+    const response = await api.put(`/files/${fileId}/storage-class`, { storageClass });
+    return response.data;
+  },
+
+  // Bulk change storage class for multiple files
+  bulkChangeStorageClass: async (fileIds, storageClass) => {
+    const response = await api.put('/files/bulk/storage-class', { fileIds, storageClass });
+    return response.data;
+  },
+
+  // Get download URL for file
+  getDownloadUrl: async (fileId) => {
+    const response = await api.get(`/files/${fileId}/download`);
+    return response.data.downloadUrl;
+  },
 };
 
 // Folder management API
@@ -233,6 +251,13 @@ export const billingAPI = {
     const response = await api.get('/billing/usage');
     return response.data;
   },
+
+  getCurrentBilling: async () => {
+    const response = await api.get('/billing/current');
+    return response.data;
+  },
+
+
 };
 
 

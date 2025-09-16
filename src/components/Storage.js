@@ -17,7 +17,8 @@ import {
   FiDatabase,
   FiGrid,
   FiList,
-  FiMenu
+  FiMenu,
+  FiZap
 } from 'react-icons/fi';
 import { fileAPI } from '../services/api';
 import { useSharedFiles } from '../contexts/SharedFilesContext';
@@ -47,6 +48,11 @@ const Storage = () => {
     usedStorage: 0,
     fileCount: 0
   });
+  const [showIntelligentTieringModal, setShowIntelligentTieringModal] = useState(false);
+  const [fileToConvert, setFileToConvert] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState(new Set());
+  const [showBulkIntelligentTieringModal, setShowBulkIntelligentTieringModal] = useState(false);
+  const [bulkOperationProgress, setBulkOperationProgress] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -141,8 +147,117 @@ const Storage = () => {
     setSelectedFile(null);
   };
 
+  const handleIntelligentTieringClick = (file) => {
+    setFileToConvert(file);
+    setShowIntelligentTieringModal(true);
+  };
+
+  const handleIntelligentTieringConfirm = async () => {
+    try {
+      const result = await fileAPI.changeStorageClass(fileToConvert.id, 'INTELLIGENT_TIERING');
+      
+      // Update the file in the local state
+      setFiles(files.map(f => 
+        f.id === fileToConvert.id 
+          ? { ...f, storageClass: 'INTELLIGENT_TIERING', estimatedMonthlyCost: result.file.estimatedMonthlyCost }
+          : f
+      ));
+      
+      setShowIntelligentTieringModal(false);
+      setFileToConvert(null);
+      
+      // Show success message (you could add a toast notification here)
+      console.log('Successfully switched to Intelligent Tiering');
+    } catch (error) {
+      console.error('Error switching to intelligent tiering:', error);
+      // Handle error (you could show an error toast here)
+    }
+  };
+
+  const handleIntelligentTieringCancel = () => {
+    setShowIntelligentTieringModal(false);
+    setFileToConvert(null);
+  };
+
+  const handleFileSelection = (fileId, isSelected) => {
+    const newSelectedFiles = new Set(selectedFiles);
+    if (isSelected) {
+      newSelectedFiles.add(fileId);
+    } else {
+      newSelectedFiles.delete(fileId);
+    }
+    setSelectedFiles(newSelectedFiles);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedFiles.size === sortedFiles.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(sortedFiles.map(file => file.id)));
+    }
+  };
+
+  const handleBulkIntelligentTieringClick = () => {
+    if (selectedFiles.size === 0) return;
+    setShowBulkIntelligentTieringModal(true);
+  };
+
+  const handleBulkIntelligentTieringConfirm = async () => {
+    try {
+      setBulkOperationProgress({ current: 0, total: selectedFiles.size });
+      
+      const fileIdsArray = Array.from(selectedFiles);
+      const result = await fileAPI.bulkChangeStorageClass(fileIdsArray, 'INTELLIGENT_TIERING');
+      
+      // Update the files in the local state
+      setFiles(files.map(f => {
+        const updatedFile = result.results.find(r => r.fileId === f.id && r.success);
+        if (updatedFile && updatedFile.file) {
+          return updatedFile.file;
+        }
+        return f;
+      }));
+      
+      setShowBulkIntelligentTieringModal(false);
+      setSelectedFiles(new Set());
+      setBulkOperationProgress(null);
+      
+      // Show success message
+      console.log(`Successfully switched ${result.successCount} files to Intelligent Tiering`);
+      if (result.failureCount > 0) {
+        console.warn(`${result.failureCount} files failed to switch`);
+      }
+      
+    } catch (error) {
+      console.error('Error bulk switching to intelligent tiering:', error);
+      setBulkOperationProgress(null);
+    }
+  };
+
+  const handleBulkIntelligentTieringCancel = () => {
+    setShowBulkIntelligentTieringModal(false);
+    setBulkOperationProgress(null);
+  };
+
+  const getEligibleFilesForIntelligentTiering = () => {
+    return Array.from(selectedFiles)
+      .map(fileId => sortedFiles.find(f => f.id === fileId))
+      .filter(file => file && file.storageClass !== 'INTELLIGENT_TIERING');
+  };
+
   const getStorageClassInfo = (storageClass) => {
     const storageClasses = {
+      'INTELLIGENT_TIERING': {
+        name: '🤖 Intelligent Tiering',
+        friendlyName: 'Intelligent Tiering Storage',
+        description: 'Automatically optimizes costs based on access patterns',
+        baseCost: '$0.0125/GB/month',
+        cost: '$0.016/GB/month',
+        margin: '30%',
+        color: '#7C3AED',
+        icon: <FiDatabase />,
+        emoji: '🤖'
+      },
       'STANDARD': {
         name: '⚡ Lightning Fast',
         friendlyName: 'Lightning Fast Storage',
@@ -309,7 +424,7 @@ const Storage = () => {
       <div className="storage-main">
 
 
-      {loading ? (
+      {currentLoading ? (
         <div className="storage-loading">
           <div className="loading-spinner"></div>
           <p>Loading storage information...</p>
@@ -497,6 +612,37 @@ const Storage = () => {
               </button>
             </div>
 
+            {/* Bulk Actions */}
+            {sortedFiles.length > 0 && activeSection !== 'shared' && (
+              <div className="bulk-actions">
+                <div className="bulk-selection">
+                  <label className="bulk-select-all">
+                    <input
+                      type="checkbox"
+                      checked={selectedFiles.size === sortedFiles.length && sortedFiles.length > 0}
+                      onChange={handleSelectAll}
+                    />
+                    <span>Select All ({selectedFiles.size} selected)</span>
+                  </label>
+                </div>
+                
+                {selectedFiles.size > 0 && (
+                  <div className="bulk-action-buttons">
+                    {getEligibleFilesForIntelligentTiering().length > 0 && (
+                      <button
+                        className="bulk-action-btn intelligent-tiering-btn"
+                        onClick={handleBulkIntelligentTieringClick}
+                        title={`Enable Intelligent Tiering for ${getEligibleFilesForIntelligentTiering().length} files`}
+                      >
+                        <FiZap />
+                        Enable Intelligent Tiering ({getEligibleFilesForIntelligentTiering().length})
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {sortedFiles.length === 0 ? (
               <div className="empty-state">
                 <FiFile className="empty-icon" />
@@ -511,7 +657,16 @@ const Storage = () => {
             ) : (
               <div className={`files-grid ${viewMode}`}>
                 {sortedFiles.map((file) => (
-                  <div key={file.id} className="file-item">
+                  <div key={file.id} className={`file-item ${selectedFiles.has(file.id) ? 'selected' : ''}`}>
+                    {activeSection !== 'shared' && (
+                      <div className="file-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selectedFiles.has(file.id)}
+                          onChange={(e) => handleFileSelection(file.id, e.target.checked)}
+                        />
+                      </div>
+                    )}
                     <div className="file-icon">
                       {getFileIcon(file.fileType)}
                     </div>
@@ -524,12 +679,25 @@ const Storage = () => {
                       </div>
                       <div className="storage-class-badge"
                            style={{ backgroundColor: getStorageClassInfo(file.storageClass).color + '20',
-                                   color: getStorageClassInfo(file.storageClass).color }}>
+                                   color: getStorageClassInfo(file.storageClass).color }}
+                           title={file.storageClass === 'INTELLIGENT_TIERING' 
+                             ? "AWS automatically moves your files between storage tiers based on access patterns to optimize costs while maintaining instant access when needed."
+                             : getStorageClassInfo(file.storageClass).description}>
                         {getStorageClassInfo(file.storageClass).name}
                       </div>
                       {file.estimatedMonthlyCost && (
                         <div className="monthly-cost">
                           ${file.estimatedMonthlyCost.toFixed(4)}/month
+                        </div>
+                      )}
+                      {file.storageClass === 'INTELLIGENT_TIERING' && file.savingsFromIntelligentTiering && (
+                        <div className="intelligent-tiering-savings">
+                          💰 Saving ${file.savingsFromIntelligentTiering.toFixed(2)}/month with intelligent optimization
+                        </div>
+                      )}
+                      {file.storageClass === 'INTELLIGENT_TIERING' && !file.savingsFromIntelligentTiering && (
+                        <div className="intelligent-tiering-info">
+                          🤖 Automatically optimizing costs based on access patterns
                         </div>
                       )}
                     </div>
@@ -542,6 +710,16 @@ const Storage = () => {
                       >
                         <FiStar />
                       </button>
+                      {file.storageClass !== 'INTELLIGENT_TIERING' && (
+                        <button
+                          className="action-btn intelligent-tiering-btn"
+                          onClick={() => handleIntelligentTieringClick(file)}
+                          aria-label={`Switch ${file.originalName} to Intelligent Tiering`}
+                          title="Switch to Intelligent Tiering"
+                        >
+                          <FiZap />
+                        </button>
+                      )}
                       <button
                         className="action-btn"
                         onClick={() => handleDownload(file)}
@@ -574,6 +752,119 @@ const Storage = () => {
           onClose={handleShareModalClose}
           fileDetails={selectedFile}
         />
+      )}
+
+      {/* Intelligent Tiering Confirmation Modal */}
+      {showIntelligentTieringModal && fileToConvert && (
+        <div className="modal-overlay">
+          <div className="intelligent-tiering-modal">
+            <div className="modal-header">
+              <h3>🤖 Switch to Intelligent Tiering</h3>
+            </div>
+            <div className="modal-content">
+              <p><strong>File:</strong> {fileToConvert.originalName}</p>
+              <p><strong>Current Storage:</strong> {getStorageClassInfo(fileToConvert.storageClass).name}</p>
+              
+              <div className="benefits-section">
+                <h4>Benefits of Intelligent Tiering:</h4>
+                <ul>
+                  <li>🤖 <strong>Automatic Optimization:</strong> AWS automatically moves your file between storage tiers based on access patterns</li>
+                  <li>💰 <strong>Cost Savings:</strong> Save money without any manual work - the system optimizes costs for you</li>
+                  <li>⚡ <strong>No Performance Impact:</strong> Files remain instantly accessible when you need them</li>
+                  <li>🔄 <strong>Seamless Transitions:</strong> Files move between tiers automatically based on usage</li>
+                </ul>
+              </div>
+
+              <div className="cost-comparison">
+                <p><strong>How it works:</strong></p>
+                <p>AWS monitors your file access patterns and automatically moves files between different storage tiers (Frequent Access, Infrequent Access, Archive, etc.) to optimize costs while maintaining instant access when needed.</p>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={handleIntelligentTieringCancel}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-confirm" 
+                onClick={handleIntelligentTieringConfirm}
+              >
+                Switch to Intelligent Tiering
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Intelligent Tiering Confirmation Modal */}
+      {showBulkIntelligentTieringModal && (
+        <div className="modal-overlay">
+          <div className="intelligent-tiering-modal bulk-modal">
+            <div className="modal-header">
+              <h3>🤖 Enable Intelligent Tiering for Multiple Files</h3>
+            </div>
+            <div className="modal-content">
+              <p><strong>Selected Files:</strong> {getEligibleFilesForIntelligentTiering().length} files eligible for Intelligent Tiering</p>
+              
+              {bulkOperationProgress && (
+                <div className="progress-section">
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${(bulkOperationProgress.current / bulkOperationProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p>Processing {bulkOperationProgress.current} of {bulkOperationProgress.total} files...</p>
+                </div>
+              )}
+              
+              <div className="benefits-section">
+                <h4>Benefits of Intelligent Tiering:</h4>
+                <ul>
+                  <li>🤖 <strong>Automatic Optimization:</strong> AWS automatically moves your files between storage tiers based on access patterns</li>
+                  <li>💰 <strong>Cost Savings:</strong> Save money without any manual work - the system optimizes costs for you</li>
+                  <li>⚡ <strong>No Performance Impact:</strong> Files remain instantly accessible when you need them</li>
+                  <li>🔄 <strong>Seamless Transitions:</strong> Files move between tiers automatically based on usage</li>
+                </ul>
+              </div>
+
+              <div className="file-list-preview">
+                <h4>Files to be updated:</h4>
+                <div className="file-preview-list">
+                  {getEligibleFilesForIntelligentTiering().slice(0, 5).map(file => (
+                    <div key={file.id} className="file-preview-item">
+                      <span className="file-name">{file.originalName}</span>
+                      <span className="current-storage">{getStorageClassInfo(file.storageClass).name}</span>
+                    </div>
+                  ))}
+                  {getEligibleFilesForIntelligentTiering().length > 5 && (
+                    <div className="file-preview-item more">
+                      <span>... and {getEligibleFilesForIntelligentTiering().length - 5} more files</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={handleBulkIntelligentTieringCancel}
+                disabled={bulkOperationProgress !== null}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-confirm" 
+                onClick={handleBulkIntelligentTieringConfirm}
+                disabled={bulkOperationProgress !== null}
+              >
+                {bulkOperationProgress ? 'Processing...' : 'Enable Intelligent Tiering'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
     </div>

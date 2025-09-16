@@ -331,4 +331,178 @@ router.post('/storage/recommendations', authenticateToken, (req, res) => {
   }
 });
 
+// Change storage class for existing file
+router.put('/:fileId/storage-class', authenticateToken, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const { storageClass } = req.body;
+    
+    if (!storageClass) {
+      return res.status(400).json({ error: 'storageClass is required' });
+    }
+    
+    // Validate storage class
+    const validStorageClasses = ['STANDARD', 'STANDARD_IA', 'ONEZONE_IA', 'GLACIER_IR', 'GLACIER', 'DEEP_ARCHIVE', 'INTELLIGENT_TIERING'];
+    if (!validStorageClasses.includes(storageClass)) {
+      return res.status(400).json({ error: 'Invalid storage class' });
+    }
+    
+    // Find the file
+    const file = await findFileById(req.user.id, fileId);
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    console.log(`🔄 Changing storage class for file ${file.originalName}:`);
+    console.log(`  - From: ${file.storageClass}`);
+    console.log(`  - To: ${storageClass}`);
+    
+    // Calculate new estimated monthly cost
+    const { getStorageClassCost } = require('../services/storageService');
+    const fileSizeGB = file.fileSize / (1024 * 1024 * 1024);
+    const newEstimatedMonthlyCost = getStorageClassCost(storageClass) * fileSizeGB;
+    
+    // Update the file record
+    const updatedFile = await updateFile(req.user.id, fileId, {
+      storageClass: storageClass,
+      estimatedMonthlyCost: newEstimatedMonthlyCost
+    });
+    
+    // Track billing activity for storage class change
+    await trackBillingActivity(req.user.id, 'storage_class_change', {
+      fileName: file.originalName,
+      fileSize: file.fileSize,
+      fromStorageClass: file.storageClass,
+      toStorageClass: storageClass,
+      oldCost: file.estimatedMonthlyCost,
+      newCost: newEstimatedMonthlyCost,
+      costDifference: newEstimatedMonthlyCost - file.estimatedMonthlyCost
+    });
+    
+    console.log(`✅ Storage class changed successfully`);
+    console.log(`  - New estimated monthly cost: $${newEstimatedMonthlyCost.toFixed(4)}`);
+    
+    res.json({
+      message: 'Storage class updated successfully',
+      file: updatedFile,
+      oldStorageClass: file.storageClass,
+      newStorageClass: storageClass,
+      costChange: newEstimatedMonthlyCost - file.estimatedMonthlyCost
+    });
+    
+  } catch (error) {
+    console.error('Change storage class error:', error);
+    res.status(500).json({ error: 'Failed to change storage class' });
+  }
+});
+
+// Bulk change storage class for multiple files
+router.put('/bulk/storage-class', authenticateToken, async (req, res) => {
+  try {
+    const { fileIds, storageClass } = req.body;
+    
+    if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
+      return res.status(400).json({ error: 'fileIds array is required' });
+    }
+    
+    if (!storageClass) {
+      return res.status(400).json({ error: 'storageClass is required' });
+    }
+    
+    // Validate storage class
+    const validStorageClasses = ['STANDARD', 'STANDARD_IA', 'ONEZONE_IA', 'GLACIER_IR', 'GLACIER', 'DEEP_ARCHIVE', 'INTELLIGENT_TIERING'];
+    if (!validStorageClasses.includes(storageClass)) {
+      return res.status(400).json({ error: 'Invalid storage class' });
+    }
+    
+    console.log(`🔄 Bulk changing storage class to ${storageClass} for ${fileIds.length} files`);
+    
+    const results = [];
+    let successCount = 0;
+    let failureCount = 0;
+    let totalCostChange = 0;
+    
+    const { getStorageClassCost } = require('../services/storageService');
+    
+    for (const fileId of fileIds) {
+      try {
+        const file = await findFileById(req.user.id, fileId);
+        
+        if (!file) {
+          results.push({ fileId, success: false, error: 'File not found' });
+          failureCount++;
+          continue;
+        }
+        
+        // Skip if already using the target storage class
+        if (file.storageClass === storageClass) {
+          results.push({ 
+            fileId, 
+            success: true, 
+            message: 'Already using target storage class',
+            file: file
+          });
+          successCount++;
+          continue;
+        }
+        
+        // Calculate new estimated monthly cost
+        const fileSizeGB = file.fileSize / (1024 * 1024 * 1024);
+        const newEstimatedMonthlyCost = getStorageClassCost(storageClass) * fileSizeGB;
+        const costChange = newEstimatedMonthlyCost - file.estimatedMonthlyCost;
+        totalCostChange += costChange;
+        
+        // Update the file record
+        const updatedFile = await updateFile(req.user.id, fileId, {
+          storageClass: storageClass,
+          estimatedMonthlyCost: newEstimatedMonthlyCost
+        });
+        
+        // Track billing activity for storage class change
+        await trackBillingActivity(req.user.id, 'storage_class_change', {
+          fileName: file.originalName,
+          fileSize: file.fileSize,
+          fromStorageClass: file.storageClass,
+          toStorageClass: storageClass,
+          oldCost: file.estimatedMonthlyCost,
+          newCost: newEstimatedMonthlyCost,
+          costDifference: costChange,
+          isBulkOperation: true
+        });
+        
+        results.push({ 
+          fileId, 
+          success: true, 
+          file: updatedFile,
+          oldStorageClass: file.storageClass,
+          newStorageClass: storageClass,
+          costChange: costChange
+        });
+        successCount++;
+        
+      } catch (error) {
+        console.error(`Error changing storage class for file ${fileId}:`, error);
+        results.push({ fileId, success: false, error: error.message });
+        failureCount++;
+      }
+    }
+    
+    console.log(`✅ Bulk storage class change completed: ${successCount} successful, ${failureCount} failed`);
+    console.log(`💰 Total cost change: ${totalCostChange > 0 ? '+' : ''}${totalCostChange.toFixed(4)}/month`);
+    
+    res.json({
+      message: `Bulk storage class change completed: ${successCount} successful, ${failureCount} failed`,
+      successCount,
+      failureCount,
+      totalCostChange,
+      storageClass,
+      results
+    });
+    
+  } catch (error) {
+    console.error('Bulk storage class change error:', error);
+    res.status(500).json({ error: 'Bulk storage class change failed' });
+  }
+});
+
 module.exports = router;

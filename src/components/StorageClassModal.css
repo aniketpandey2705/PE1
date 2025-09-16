@@ -104,6 +104,24 @@
   font-size: 0.875rem;
 }
 
+.recommendation-banner.intelligent-tiering {
+  background: linear-gradient(135deg, #7C3AED10, #7C3AED05);
+  border-color: #7C3AED;
+}
+
+.recommendation-banner.intelligent-tiering svg {
+  color: #7C3AED;
+}
+
+.intelligent-tiering-explanation {
+  margin-top: 0.5rem !important;
+  padding: 0.5rem;
+  background: rgba(124, 58, 237, 0.1);
+  border-radius: 4px;
+  border-left: 3px solid #7C3AED;
+  font-size: 0.8rem !important;
+}
+
 .storage-classes {
   display: flex;
   flex-direction: column;

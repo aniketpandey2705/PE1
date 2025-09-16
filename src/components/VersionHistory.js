@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   FiClock,
   FiDownload,
@@ -12,7 +12,7 @@ import {
   FiZap,
   FiInfo
 } from 'react-icons/fi';
-import { fileAPI } from '../services/api';
+// import { fileAPI } from '../services/api'; // Removed unused import
 import './VersionHistory.css';
 
 const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
@@ -27,9 +27,9 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
     if (fileId) {
       fetchVersionHistory();
     }
-  }, [fileId]);
+  }, [fileId, fetchVersionHistory]);
 
-  const fetchVersionHistory = async () => {
+  const fetchVersionHistory = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/versions/${fileId}/versions?includeCosts=true`, {
@@ -50,7 +50,7 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fileId]);
 
   const handleRestoreVersion = async (versionId, versionNumber) => {
     if (!window.confirm(`Restore version ${versionNumber}? This will make it the current active version.`)) {
@@ -205,6 +205,7 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
 
   const getStorageClassColor = (storageClass) => {
     const colors = {
+      'INTELLIGENT_TIERING': '#7C3AED',
       'STANDARD': '#3B82F6',
       'STANDARD_IA': '#10B981',
       'ONEZONE_IA': '#F59E0B',
@@ -213,6 +214,40 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       'DEEP_ARCHIVE': '#6B7280'
     };
     return colors[storageClass] || '#6B7280';
+  };
+
+  const getStorageClassInfo = (storageClass) => {
+    const storageClasses = {
+      'INTELLIGENT_TIERING': {
+        name: '🤖 Intelligent Tiering',
+        description: 'AWS automatically moves your files between storage tiers based on access patterns to optimize costs while maintaining instant access when needed.'
+      },
+      'STANDARD': {
+        name: '⚡ Lightning Fast',
+        description: 'Perfect for files you access daily'
+      },
+      'STANDARD_IA': {
+        name: '💎 Smart Saver',
+        description: 'Great for large files, smart optimization'
+      },
+      'ONEZONE_IA': {
+        name: '🎯 Budget Smart',
+        description: 'Most affordable for non-critical files'
+      },
+      'GLACIER_IR': {
+        name: '🏔️ Archive Pro',
+        description: 'Ultra-low cost with instant access'
+      },
+      'GLACIER': {
+        name: '🧊 Deep Freeze',
+        description: 'Long-term storage, massive savings'
+      },
+      'DEEP_ARCHIVE': {
+        name: '🏛️ Vault Keeper',
+        description: 'Ultimate long-term storage'
+      }
+    };
+    return storageClasses[storageClass] || { name: storageClass, description: '' };
   };
 
   if (loading) {
@@ -297,9 +332,10 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
                         backgroundColor: getStorageClassColor(version.storageClass) + '20',
                         color: getStorageClassColor(version.storageClass)
                       }}
+                      title={getStorageClassInfo(version.storageClass).description}
                     >
                       <FiDatabase />
-                      {version.storageClassInfo?.name || version.storageClass}
+                      {getStorageClassInfo(version.storageClass).name}
                     </div>
                     <span className="version-cost">
                       <FiDollarSign />

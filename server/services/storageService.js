@@ -13,7 +13,8 @@ const getStorageClassCost = (storageClass, withMargin = true) => {
     'ONEZONE_IA': 0.01,
     'GLACIER_IR': 0.004,
     'GLACIER': 0.0036,
-    'DEEP_ARCHIVE': 0.00099
+    'DEEP_ARCHIVE': 0.00099,
+    'INTELLIGENT_TIERING': 0.0125  // Base cost similar to STANDARD_IA, AWS optimizes automatically
   };
   
   // Tiered margin system - higher margins on premium storage classes
@@ -23,7 +24,8 @@ const getStorageClassCost = (storageClass, withMargin = true) => {
     'ONEZONE_IA': 40,      // Budget Smart - 40% margin (budget solution)
     'GLACIER_IR': 45,      // Archive Pro - 45% margin (professional archiving)
     'GLACIER': 50,         // Deep Freeze - 50% margin (specialized long-term)
-    'DEEP_ARCHIVE': 60     // Vault Keeper - 60% margin (premium vault service)
+    'DEEP_ARCHIVE': 60,    // Vault Keeper - 60% margin (premium vault service)
+    'INTELLIGENT_TIERING': 30  // Intelligent Tiering - 30% margin (automated optimization)
   };
   
   const baseCost = baseCosts[storageClass] || baseCosts['STANDARD'];
@@ -113,6 +115,17 @@ const getOptimalStorageClass = (fileType, fileSize, fileName = '') => {
 const getPricingStructure = () => {
   return {
     storage: {
+      intelligent_tiering: {
+        name: '🤖 Intelligent Tiering Storage',
+        awsName: 'INTELLIGENT_TIERING',
+        baseCost: 0.0125,
+        price: getStorageClassCost('INTELLIGENT_TIERING'),
+        margin: 30,
+        description: 'Automatically optimizes costs based on access patterns',
+        icon: '🤖',
+        color: '#7C3AED',
+        tagline: 'Set it and forget it - AWS optimizes for you'
+      },
       lightning_fast: {
         name: '⚡ Lightning Fast Storage',
         awsName: 'STANDARD',
@@ -222,6 +235,24 @@ const getPricingStructure = () => {
 // Get all available storage classes with user-friendly details and updated pricing
 const getAvailableStorageClasses = () => {
   return [
+    {
+      name: 'INTELLIGENT_TIERING',
+      awsName: 'INTELLIGENT_TIERING',
+      displayName: '🤖 Intelligent Tiering',
+      friendlyName: 'Intelligent Tiering Storage',
+      baseCost: 0.0125,
+      cost: getStorageClassCost('INTELLIGENT_TIERING'),
+      margin: 30,
+      description: '🤖 Intelligent Tiering - Automatically optimizes costs based on access patterns',
+      detailedDescription: 'AWS automatically moves your files between storage tiers based on how often you access them. Save money without thinking about it - the system optimizes costs for you.',
+      retrievalTime: 'Instant',
+      minimumDuration: 'None',
+      icon: '🤖',
+      color: '#7C3AED',
+      bestFor: ['All File Types', 'Automatic Optimization', 'Hands-off Management'],
+      savings: 'Automatic cost optimization',
+      tagline: 'Set it and forget it - AWS optimizes for you'
+    },
     {
       name: 'STANDARD',
       awsName: 'STANDARD',

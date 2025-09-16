@@ -30,6 +30,21 @@ const StorageClassModal = ({
 
   // User-friendly storage classes with tiered pricing
   const STORAGE_PRICING = {
+    INTELLIGENT_TIERING: {
+      basePricePerGB: 0.0125,
+      pricePerGB: 0.01625, // 30% margin
+      displayName: '🤖 Intelligent Tiering',
+      friendlyName: 'Intelligent Tiering Storage',
+      description: 'AWS automatically moves files between tiers to save money',
+      retrievalTime: 'Instant',
+      minimumDuration: 'None',
+      savingsVsStandard: 'Automatic optimization',
+      margin: 30,
+      icon: '🤖',
+      color: '#7C3AED',
+      tagline: 'Set it and forget it - AWS optimizes for you',
+      recommended: true
+    },
     STANDARD: {
       basePricePerGB: 0.023,
       pricePerGB: 0.029, // 25% margin
@@ -139,8 +154,15 @@ const StorageClassModal = ({
         file.type,
         file.size
       );
-      setRecommendations(data);
-      setSelectedStorageClass(data.recommendation.recommended);
+      setRecommendations({
+        ...data,
+        recommendation: {
+          ...data.recommendation,
+          recommended: 'INTELLIGENT_TIERING',
+          reason: 'Intelligent Tiering automatically optimizes costs based on access patterns'
+        }
+      });
+      setSelectedStorageClass('INTELLIGENT_TIERING');
       
       // Set default storage size based on file size
       const fileSizeGB = file.size / (1024 * 1024 * 1024);
@@ -150,9 +172,16 @@ const StorageClassModal = ({
       setSelectedStorageSize(closestSize.value);
     } catch (error) {
       console.error('Error fetching storage recommendations:', error);
-      // Set default values if API fails
-      setSelectedStorageClass('STANDARD');
+      // Set default values if API fails - default to INTELLIGENT_TIERING
+      setSelectedStorageClass('INTELLIGENT_TIERING');
       setSelectedStorageSize(1);
+      setRecommendations({
+        showRecommendations: true,
+        recommendation: {
+          recommended: 'INTELLIGENT_TIERING',
+          reason: 'Intelligent Tiering automatically optimizes costs based on access patterns'
+        }
+      });
     } finally {
       setLoadingRecommendations(false);
     }
@@ -195,6 +224,8 @@ const StorageClassModal = ({
 
   const getStorageClassIcon = (storageClass) => {
     switch (storageClass) {
+      case 'INTELLIGENT_TIERING':
+        return '🤖';
       case 'STANDARD':
         return '🔵';
       case 'STANDARD_IA':
@@ -268,11 +299,18 @@ const StorageClassModal = ({
           ) : (
             <>
               {recommendations?.showRecommendations && (
-                <div className="recommendation-banner">
+                <div className={`recommendation-banner ${
+                  recommendations.recommendation.recommended === 'INTELLIGENT_TIERING' ? 'intelligent-tiering' : ''
+                }`}>
                   <FiInfo />
                   <div>
                     <strong>Recommended: {STORAGE_PRICING[recommendations.recommendation.recommended]?.displayName}</strong>
                     <p>{recommendations.recommendation.reason}</p>
+                    {recommendations.recommendation.recommended === 'INTELLIGENT_TIERING' && (
+                      <p className="intelligent-tiering-explanation">
+                        <strong>How it works:</strong> AWS automatically moves files between tiers to save money
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -327,9 +365,11 @@ const StorageClassModal = ({
                               Min: {pricing.minimumDuration}
                             </span>
                           )}
-                          {pricing.savingsVsStandard > 0 && (
+                          {(pricing.savingsVsStandard > 0 || typeof pricing.savingsVsStandard === 'string') && (
                             <span className="savings">
-                              {pricing.savingsVsStandard}% savings
+                              {typeof pricing.savingsVsStandard === 'string' 
+                                ? pricing.savingsVsStandard 
+                                : `${pricing.savingsVsStandard}% savings`}
                             </span>
                           )}
                         </div>

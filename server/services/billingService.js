@@ -180,12 +180,38 @@ const getCurrentUsage = async (userId) => {
       return acc;
     }, {});
 
+    // Get pricing structure
+    const pricingStructure = {
+      storage: {
+        lightning_fast: { price: 0.023 * 1.3 },
+        smart_saver: { price: 0.0125 * 1.35 },
+        budget_smart: { price: 0.01 * 1.4 },
+        archive_pro: { price: 0.004 * 1.45 },
+        deep_freeze: { price: 0.0036 * 1.5 },
+        vault_keeper: { price: 0.00099 * 1.6 }
+      },
+      requests: {
+        uploads: { price: 0.05 * 1.3 },
+        downloads: { price: 0.004 * 1.3 }
+      },
+      transfer: {
+        out: { price: 0.10 * 1.3, freeAllowance: 10 }
+      }
+    };
+
     return {
       totalStorage,
       totalFiles,
       estimatedMonthlyCost,
       storageClassUsage,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      pricing: pricingStructure,
+      // Add frontend-compatible structure
+      storage: {
+        totalUsed: totalStorage,
+        totalCost: estimatedMonthlyCost,
+        classes: storageClassUsage
+      }
     };
   } catch (error) {
     console.error('Error getting current usage:', error);
