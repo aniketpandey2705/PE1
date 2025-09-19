@@ -4,7 +4,8 @@
   padding: 2rem;
   background: var(--bg-secondary);
   border-radius: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
 }
 
 .storage-header {
@@ -39,7 +40,7 @@
 
 .storage-icon {
   font-size: 2rem;
-  color: var(--primary);
+  color: var(--accent);
 }
 
 .stat-details {

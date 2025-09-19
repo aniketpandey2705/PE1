@@ -1,9 +1,34 @@
 /* Theme Variables */
 :root {
-  /* Light Theme Colors */
+  /* Legacy Colors (maintained for backward compatibility) */
   --newport-blue: #1F92CC;
   --harvest-haze: #DE6A31;
   --neutral-gray: #C0CBCC;
+  
+  /* Modern Color System - Dark Theme */
+  --modern-dark-primary: #000000;
+  --modern-dark-secondary: #0B192C;
+  --modern-dark-accent: #1E3E62;
+  --modern-dark-bright: #FF6500;
+  
+  /* Modern Color System - Light Theme */
+  --modern-light-primary: #FFFFFF;
+  --modern-light-secondary: #F9F6F7;
+  --modern-light-accent: #FFE8D6;
+  --modern-light-interactive: #FF971D;
+  
+  /* Sharp Design System */
+  --modern-radius-sharp: 2px;
+  --modern-radius-minimal: 4px;
+  --modern-shadow-sharp: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --modern-shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --modern-shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  /* Responsive Design Variables */
+  --modern-container-padding: clamp(1rem, 4vw, 2rem);
+  --modern-section-spacing: clamp(3rem, 8vw, 5rem);
+  --modern-card-gap: clamp(1rem, 3vw, 2rem);
+  --modern-text-scale: clamp(0.875rem, 2.5vw, 1rem);
   
   /* Spacing */
   --space-2: 0.5rem;
@@ -21,54 +46,84 @@
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
+  
+  /* Responsive Breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 }
 
 /* Light Theme */
-[data-theme='light'] {
-  --primary: var(--newport-blue);
-  --primary-light: #6FCFFC;
-  --primary-dark: #1A7AA3;
-  --accent: var(--harvest-haze);
+[data-theme='light'],
+[data-theme='light'] body,
+[data-theme='light'] #root {
+  /* Modern Color Mappings */
+  --primary: #FFFFFF;
+  --primary-light: #F9F6F7;
+  --primary-dark: #FFE8D6;
+  --accent: #FF971D;
   
+  /* Modern Background Colors */
   --bg-primary: #FFFFFF;
-  --bg-secondary: #F8FAFC;
-  --bg-elevated: #F1F5F9;
-  --bg-tertiary: #E2E8F0;
+  --bg-secondary: #F9F6F7;
+  --bg-elevated: #FFFFFF;
+  --bg-tertiary: #FFE8D6;
   
-  --text-primary: #0F172A;
-  --text-secondary: #334155;
-  --text-tertiary: #64748B;
+  /* Text Colors (optimized for light backgrounds) */
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --text-tertiary: #6B7280;
   --text-inverse: #FFFFFF;
   
-  --border-light: #E2E8F0;
-  --border-focus: var(--primary);
+  /* Border Colors */
+  --border-light: #FFE8D6;
+  --border-focus: #FF971D;
   
+  /* Modern Shadows */
   --error: #EF4444;
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
+  
+  /* Legacy Compatibility */
+  --newport-blue-mapped: #1E3E62;
+  --harvest-haze-mapped: #1E3E62;
 }
 
 /* Dark Theme */
 [data-theme='dark'] {
-  --primary: #2563eb;
-  --primary-light: #3b82f6;
-  --primary-dark: #1d4ed8;
-  --accent: #f97316;
+  /* Modern Color Mappings */
+  --primary: #000000;
+  --primary-light: #0B192C;
+  --primary-dark: #1E3E62;
+  --accent: #FF6500;
   
-  --bg-primary: #030712;
-  --bg-secondary: #111827;
-  --bg-elevated: #1f2937;
-  --bg-tertiary: #374151;
+  /* Modern Background Colors */
+  --bg-primary: #000000;
+  --bg-secondary: #000000;
+  --bg-elevated: #000000;
+  --bg-tertiary: #000000;
   
-  --text-primary: #F8FAFC;
-  --text-secondary: #E2E8F0;
-  --text-tertiary: #94A3B8;
-  --text-inverse: #0F172A;
+  /* Text Colors (optimized for dark backgrounds) */
+  --text-primary: #FFFFFF;
+  --text-secondary: #E5E5E5;
+  --text-tertiary: #A0A0A0;
+  --text-inverse: #000000;
   
-  --border-light: #334155;
-  --border-focus: var(--primary);
+  /* Border Colors */
+  --border-light: rgba(30, 62, 98, 0.3);
+  --border-focus: #FF6500;
   
+  /* Modern Shadows */
   --error: #EF4444;
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.7);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.6);
+  
+  /* Enhanced Dark Theme Shadows */
+  --shadow-sharp-dark: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-elevated-dark: 0 4px 16px rgba(0, 0, 0, 0.8);
 }
 
 /* Global Styles */
@@ -78,15 +133,34 @@
   box-sizing: border-box;
 }
 
+html {
+  background-color: var(--bg-primary);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+  background: linear-gradient(135deg, 
+    var(--bg-primary) 0%, 
+    var(--bg-secondary) 50%, 
+    var(--bg-tertiary) 100%);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, 
+    #000000 0%, 
+    #0B192C 30%, 
+    #1E3E62 70%, 
+    #000000 100%);
 }
 
 #root {
   min-height: 100vh;
+  background-color: var(--bg-primary);
 }
 
 /* Remove default button styles */
@@ -128,4 +202,42 @@ a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Responsive Design Adjustments */
+@media (max-width: 768px) {
+  :root {
+    /* Mobile-optimized shadows (lighter for performance) */
+    --modern-shadow-sharp: 0 1px 4px rgba(0, 0, 0, 0.08);
+    --modern-shadow-elevated: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --modern-shadow-glass: 0 4px 16px rgba(0, 0, 0, 0.08);
+    
+    /* Mobile spacing adjustments */
+    --modern-container-padding: 1rem;
+    --modern-section-spacing: 2rem;
+    --modern-card-gap: 1rem;
+  }
+  
+  /* Light theme mobile adjustments */
+  [data-theme='light'] {
+    --shadow-md: var(--modern-shadow-sharp);
+    --shadow-lg: var(--modern-shadow-elevated);
+  }
+  
+  /* Dark theme mobile adjustments */
+  [data-theme='dark'] {
+    --shadow-md: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-glass: 0 4px 16px rgba(9, 0, 64, 0.3);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    /* Extra small mobile optimizations */
+    --modern-radius-sharp: 1px;
+    --modern-radius-minimal: 2px;
+    --modern-container-padding: 0.75rem;
+    --modern-section-spacing: 1.5rem;
+  }
 }

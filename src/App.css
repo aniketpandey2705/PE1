@@ -6,15 +6,20 @@
 }
 
 :root {
-  /* Color Palette - Updated */
-  --primary: #2D82B7; /* Deeper Blue */
-  --primary-light: #6FCFFC;
-  --primary-dark: #1A7AA3;
-  --primary-hover: #1A7AA3;
-  --secondary: #EF6B6B; /* Bright Coral */
-  --accent: #57C78F; /* Mint Green */
+  /* Modern Color System Integration */
+  --primary: var(--modern-light-interactive, #FF971D);
+  --primary-light: var(--modern-light-accent, #FFE8D6);
+  --primary-dark: #FF6B35;
+  --primary-hover: #FF8C42;
+  --secondary: var(--modern-light-interactive, #FF971D);
+  --accent: var(--modern-light-interactive, #FF971D);
   --warning: #FFB347;
   --error: #FF6B6B;
+  
+  /* Legacy Color Palette (maintained for compatibility) */
+  --legacy-primary: #2D82B7;
+  --legacy-secondary: #EF6B6B;
+  --legacy-accent: #57C78F;
 
   /* Neutral Colors */
   --white: #ffffff;
@@ -29,14 +34,14 @@
   --gray-800: #343A40;
   --gray-900: #212529;
 
-  /* Background Colors */
-  --bg-primary: #F7F7F7; /* cleaner white canvas */
-  --bg-secondary: #F0F0F0;
-  --bg-tertiary: var(--gray-100);
+  /* Background Colors - Modern Integration */
+  --bg-primary: var(--modern-light-primary, #FFFFFF);
+  --bg-secondary: var(--modern-light-secondary, #F9F6F7);
+  --bg-tertiary: var(--modern-light-accent, #FFE8D6);
   --bg-elevated: var(--white);
-  --bg-color: var(--white);
+  --bg-color: var(--modern-light-primary, #FFFFFF);
   --card-bg: var(--white);
-  --hover-color: var(--gray-100);
+  --hover-color: var(--modern-light-accent, #FFE8D6);
 
   /* Text Colors */
   --text-primary: var(--gray-900);
@@ -45,17 +50,18 @@
   --text-inverse: var(--white);
   --text-color: var(--gray-900);
 
-  /* Border Colors */
-  --border-light: var(--gray-300);
+  /* Border Colors - Modern Integration */
+  --border-light: var(--modern-light-accent, #FFE8D6);
   --border-medium: var(--gray-400);
-  --border-focus: var(--primary);
-  --border-color: var(--gray-200);
+  --border-focus: var(--modern-light-interactive, #FF971D);
+  --border-color: var(--modern-light-accent, #FFE8D6);
 
-  /* Shadows */
+  /* Shadows - Modern Sharp Design System */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-md: var(--modern-shadow-sharp, 0 2px 8px rgba(0, 0, 0, 0.1));
+  --shadow-lg: var(--modern-shadow-elevated, 0 4px 16px rgba(0, 0, 0, 0.15));
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-glass: var(--modern-shadow-glass, 0 8px 32px rgba(0, 0, 0, 0.1));
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -74,23 +80,34 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 
-  /* Font Sizes */
+  /* Font Sizes - Responsive Typography */
   --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --text-4xl: 2.25rem;
+  --text-sm: clamp(0.75rem, 2vw, 0.875rem);
+  --text-base: clamp(0.875rem, 2.5vw, 1rem);
+  --text-lg: clamp(1rem, 3vw, 1.125rem);
+  --text-xl: clamp(1.125rem, 3.5vw, 1.25rem);
+  --text-2xl: clamp(1.25rem, 4vw, 1.5rem);
+  --text-3xl: clamp(1.5rem, 5vw, 1.875rem);
+  --text-4xl: clamp(1.875rem, 6vw, 2.25rem);
+  
+  /* Responsive Hero Typography */
+  --hero-title: clamp(2rem, 8vw, 4rem);
+  --hero-subtitle: clamp(1rem, 3vw, 1.25rem);
 
-  /* Border Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
+  /* Border Radius - Sharp Design System */
+  --radius-sharp: var(--modern-radius-sharp, 2px);
+  --radius-minimal: var(--modern-radius-minimal, 4px);
+  --radius-sm: var(--modern-radius-sharp, 2px);
+  --radius-md: var(--modern-radius-minimal, 4px);
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;
   --radius-full: 9999px;
+  
+  /* Responsive Container System */
+  --container-padding: var(--modern-container-padding, clamp(1rem, 4vw, 2rem));
+  --section-spacing: var(--modern-section-spacing, clamp(3rem, 8vw, 5rem));
+  --grid-gap: var(--modern-card-gap, clamp(1rem, 3vw, 2rem));
 
   /* Transitions */
   --transition-fast: 150ms ease;
@@ -106,16 +123,23 @@
   --z-tooltip: 1060;
 }
 
-/* Dark Theme Variables - Updated */
+/* Dark Theme Variables - Modern Integration */
 [data-theme="dark"] {
-  /* Background Colors */
-  --bg-primary: #1A1A1A; /* Darker background for better contrast */
-  --bg-secondary: #2D2D2D;
-  --bg-tertiary: #333333;
-  --bg-elevated: #2D2D2D;
-  --bg-color: #1A1A1A;
-  --card-bg: #2D2D2D;
-  --hover-color: #3D3D3D;
+  /* Modern Color Mappings */
+  --primary: #000000;
+  --primary-light: #0B192C;
+  --primary-dark: #1E3E62;
+  --accent: #FF6500;
+  --primary-hover: #FF8C42;
+  
+  /* Background Colors - Modern Dark System */
+  --bg-primary: #000000;
+  --bg-secondary: #0B192C;
+  --bg-tertiary: #1E3E62;
+  --bg-elevated: #0B192C;
+  --bg-color: #000000;
+  --card-bg: #0B192C;
+  --hover-color: rgba(255, 101, 0, 0.1);
 
   /* Text Colors */
   --text-primary: var(--gray-200);
@@ -123,16 +147,18 @@
   --text-tertiary: var(--gray-400);
   --text-color: var(--gray-200);
 
-  /* Border Colors */
-  --border-light: var(--gray-600);
-  --border-medium: var(--gray-500);
-  --border-color: var(--gray-600);
+  /* Border Colors - Modern Dark System */
+  --border-light: rgba(30, 62, 98, 0.3);
+  --border-medium: rgba(30, 62, 98, 0.4);
+  --border-color: rgba(30, 62, 98, 0.3);
+  --border-focus: #FF6500;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  /* Shadows - Modern Sharp Dark System */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: var(--modern-shadow-sharp, 0 2px 8px rgba(0, 0, 0, 0.4));
+  --shadow-lg: var(--modern-shadow-elevated, 0 4px 16px rgba(0, 0, 0, 0.6));
+  --shadow-xl: 0 8px 32px rgba(9, 0, 64, 0.8);
+  --shadow-glass: 0 8px 32px rgba(9, 0, 64, 0.4);
 }
 
 /* Base Styles */
@@ -141,10 +167,112 @@ body {
   font-size: var(--text-base);
   line-height: 1.6;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
+  background: linear-gradient(135deg, 
+    var(--bg-primary) 0%, 
+    var(--bg-secondary) 50%, 
+    var(--bg-tertiary) 100%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition: background var(--transition-normal), color var(--transition-normal);
+  min-height: 100vh;
+}
+
+[data-theme="dark"] body {
+  background: linear-gradient(135deg, 
+    #000000 0%, 
+    #0B192C 30%, 
+    #1E3E62 70%, 
+    #000000 100%);
 }
 
 /* ... rest of the CSS remains unchanged ... */
+/* Respon
+sive Design Enhancements for Modern Color System */
+@media (max-width: 1024px) {
+  :root {
+    --container-padding: 1.5rem;
+    --section-spacing: 3rem;
+    --grid-gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    /* Mobile-optimized modern colors */
+    --container-padding: 1rem;
+    --section-spacing: 2rem;
+    --grid-gap: 1rem;
+    
+    /* Adjust shadows for mobile performance */
+    --shadow-md: var(--modern-shadow-sharp);
+    --shadow-lg: var(--modern-shadow-elevated);
+  }
+  
+  /* Light theme mobile optimizations */
+  [data-theme="light"] {
+    --bg-primary: var(--modern-light-primary);
+    --bg-secondary: var(--modern-light-secondary);
+    --hover-color: rgba(255, 151, 29, 0.1);
+  }
+  
+  /* Dark theme mobile optimizations */
+  [data-theme="dark"] {
+    --bg-primary: var(--modern-dark-primary);
+    --bg-secondary: var(--modern-dark-secondary);
+    --hover-color: rgba(255, 101, 0, 0.08);
+    
+    /* Lighter shadows for mobile dark theme */
+    --shadow-md: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    /* Extra small mobile adjustments */
+    --container-padding: 0.75rem;
+    --section-spacing: 1.5rem;
+    --grid-gap: 0.75rem;
+    
+    /* Minimal radius for small screens */
+    --radius-sm: 1px;
+    --radius-md: 2px;
+    --radius-lg: 4px;
+  }
+}
+
+/* High DPI / Retina Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  :root {
+    /* Sharper shadows for high DPI displays */
+    --modern-shadow-sharp: 0 1px 4px rgba(0, 0, 0, 0.12);
+    --modern-shadow-elevated: 0 2px 8px rgba(0, 0, 0, 0.18);
+  }
+}
+
+/* Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-normal: 0ms;
+    --transition-slow: 0ms;
+  }
+}
+
+/* Dark Mode Preference Detection */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Default to dark theme colors if no theme is set */
+    --primary: #FF6500;
+    --bg-primary: #000000;
+  }
+}
+
+/* Light Mode Preference Detection */
+@media (prefers-color-scheme: light) {
+  :root {
+    /* Default to light theme colors if no theme is set */
+    --primary: #FF971D;
+    --bg-primary: #FFFFFF;
+  }
+}

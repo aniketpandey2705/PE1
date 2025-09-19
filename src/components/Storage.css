@@ -1,6 +1,9 @@
 .storage-page {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: linear-gradient(135deg, 
+    var(--bg-primary) 0%, 
+    var(--bg-secondary) 50%, 
+    var(--bg-tertiary) 100%);
   color: var(--text-primary);
   display: flex;
   width: 100%;
@@ -11,8 +14,13 @@
   gap: 2rem;
   border-radius: var(--radius-2xl);
 }
+
 [data-theme="dark"] .storage-page {
-  background: rgba(17, 25, 40, 0.5);
+  background: linear-gradient(135deg, 
+    #000000 0%, 
+    #0B192C 30%, 
+    #1E3E62 70%, 
+    #000000 100%);
 }
 
 /* Sidebar */

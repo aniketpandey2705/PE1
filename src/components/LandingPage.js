@@ -8,55 +8,53 @@ import {
   FiUsers, 
   FiLock,
   FiArrowRight,
-  FiCheck,
   FiMenu,
   FiX,
   FiSun,
   FiMoon,
   FiAward,
-  FiGlobe,
-  FiServer
+  FiTrendingUp,
+  FiDatabase,
+  FiStar
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import './LandingPage.css';
 
 const LandingPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   return (
     <div className="landing-page">
-      {/* Navigation */}
-      <nav className="navbar">
-        <div className="container">
+      {/* Modern Floating Navigation */}
+      <nav className="modern-navbar">
+        <div className="nav-container">
           <div className="nav-content">
-            <div className="nav-logo">
-              <FiCloud className="logo-icon" />
-              <span className="logo-text">SkyCrate</span>
+            <div className="nav-brand">
+              <FiCloud className="brand-icon" />
+              <span className="brand-text">SkyCrate</span>
             </div>
             
-            <div className={`nav-links ${mobileMenuOpen ? 'open' : ''}`}>
-              <a href="#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
-              <a href="#security" onClick={() => setMobileMenuOpen(false)}>Security</a>
-              <a href="#cost-savings" onClick={() => setMobileMenuOpen(false)}>Cost Savings</a>
-              <a href="#storage-classes" onClick={() => setMobileMenuOpen(false)}>Storage Classes</a>
-              <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
-              <a href="#about" onClick={() => setMobileMenuOpen(false)}>About</a>
-              <Link to="/login" className="btn btn-ghost">Sign In</Link>
-              <Link to="/register" className="btn btn-primary">Get Started</Link>
+            <div className={`nav-menu ${mobileMenuOpen ? 'nav-menu-open' : ''}`}>
+              <a href="#features" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
+              <a href="#solutions" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Solutions</a>
+              <a href="#pricing" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+              <Link to="/login" className="nav-btn nav-btn-ghost">Sign In</Link>
+              <Link to="/register" className="nav-btn nav-btn-primary">Get Started</Link>
             </div>
             
-            <div className="nav-actions">
+            <div className="nav-controls">
               <button 
-                className="theme-toggle"
+                className="theme-toggle-btn"
                 onClick={toggleTheme}
                 aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}
               >
                 {isDark ? <FiSun /> : <FiMoon />}
               </button>
               <button 
-                className="mobile-menu-btn"
+                className="mobile-toggle-btn"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle mobile menu"
               >
                 {mobileMenuOpen ? <FiX /> : <FiMenu />}
               </button>
@@ -65,170 +63,155 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="container">
-          <div className="hero-content">
-            <div className="hero-text">
-              <div className="trust-badge">
-                <FiShield />
-                <span>AWS S3 Optimized Storage</span>
+      {/* Modern Full-Screen Hero Section */}
+      <section className="modern-hero">
+        <div className="hero-container">
+          <div className="hero-layout">
+            <div className="hero-content">
+              <div className="hero-badge">
+                <FiAward className="badge-icon" />
+                <span className="badge-text">AWS S3 Optimized Storage</span>
               </div>
-              <h1 className="hero-title">
-                Optimize your cloud storage costs with <span className="text-primary">SkyCrate</span>
+              
+              <h1 className="hero-heading">
+                Smart Cloud Storage
+                <span className="hero-highlight">That Saves Money</span>
               </h1>
-              <p className="hero-subtitle">
-                Pay-as-you-go billing with automatic AWS S3 storage class optimization for maximum savings and performance.
+              
+              <p className="hero-description">
+                Automatic AWS S3 optimization with up to 84% cost savings. 
+                Pay-as-you-go billing with intelligent storage class selection.
               </p>
-              <div className="hero-actions">
-                <Link to="/register" className="btn btn-primary btn-lg">
-                  Start Free Trial
-                  <FiArrowRight />
+              
+              <div className="hero-cta">
+                <Link to="/register" className="cta-primary">
+                  <span>Start Free Trial</span>
+                  <FiArrowRight className="cta-icon" />
                 </Link>
-                <button className="btn btn-ghost btn-lg">
-                  Watch Demo
+                <button className="cta-secondary">
+                  <span>Watch Demo</span>
                 </button>
               </div>
-              <div className="hero-stats">
-                <div className="stat">
-                  <span className="stat-number">46%</span>
-                  <span className="stat-label">Cost Savings on Large Videos</span>
+              
+              <div className="hero-metrics">
+                <div className="metric-item">
+                  <div className="metric-value">84%</div>
+                  <div className="metric-label">Cost Savings</div>
                 </div>
-                <div className="stat">
-                  <span className="stat-number">84%</span>
-                  <span className="stat-label">Savings on Archive Files</span>
+                <div className="metric-item">
+                  <div className="metric-value">99.9%</div>
+                  <div className="metric-label">Uptime</div>
                 </div>
-                <div className="stat">
-                  <span className="stat-number">30%</span>
-                  <span className="stat-label">Platform Margin</span>
+                <div className="metric-item">
+                  <div className="metric-value">10k+</div>
+                  <div className="metric-label">Users</div>
                 </div>
               </div>
             </div>
+            
             <div className="hero-visual">
-              <div className="floating-elements">
-                <div className="floating-card card-1">
+              <div className="visual-grid">
+                <div className="visual-card card-secure">
+                  <FiShield className="visual-icon" />
+                  <span className="visual-label">Bank-Level Security</span>
+                </div>
+                <div className="visual-card card-fast">
+                  <FiZap className="visual-icon" />
+                  <span className="visual-label">Lightning Fast</span>
+                </div>
+                <div className="visual-card card-smart">
+                  <FiTrendingUp className="visual-icon" />
+                  <span className="visual-label">Smart Optimization</span>
+                </div>
+                <div className="visual-card card-reliable">
+                  <FiDatabase className="visual-icon" />
+                  <span className="visual-label">99.9% Reliable</span>
+                </div>
+              </div>
+              <div className="hero-centerpiece">
+                <FiCloud className="centerpiece-icon" />
+                <div className="centerpiece-glow"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Modern Solutions Section */}
+      <section id="solutions" className="modern-solutions">
+        <div className="solutions-container">
+          <div className="section-intro">
+            <h2 className="section-title">Smart Storage Solutions</h2>
+            <p className="section-subtitle">
+              Automatic optimization and enterprise-grade security that saves you up to 84% on storage costs
+            </p>
+          </div>
+          
+          <div className="solutions-grid">
+            <div className="solution-card card-primary">
+              <div className="card-header">
+                <div className="card-icon">
+                  <FiTrendingUp />
+                </div>
+                <h3 className="card-title">Cost Optimization</h3>
+              </div>
+              <div className="card-content">
+                <p className="card-description">
+                  AI-powered storage class selection automatically moves your files to the most cost-effective tier
+                </p>
+                <div className="savings-showcase">
+                  <div className="savings-item">
+                    <span className="savings-percent">84%</span>
+                    <span className="savings-type">Archive Files</span>
+                  </div>
+                  <div className="savings-item">
+                    <span className="savings-percent">46%</span>
+                    <span className="savings-type">Video Files</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="solution-card card-secondary">
+              <div className="card-header">
+                <div className="card-icon">
                   <FiShield />
-                  <span>Secure</span>
                 </div>
-                <div className="floating-card card-2">
-                  <FiServer />
-                  <span>Reliable</span>
-                </div>
-                <div className="floating-card card-3">
+                <h3 className="card-title">Enterprise Security</h3>
+              </div>
+              <div className="card-content">
+                <p className="card-description">
+                  Bank-level encryption, isolated storage, and role-based access control
+                </p>
+                <ul className="security-features">
+                  <li>JWT Authentication</li>
+                  <li>Isolated User Buckets</li>
+                  <li>Pre-Signed URLs</li>
+                  <li>Role-Based Access</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="solution-card card-accent">
+              <div className="card-header">
+                <div className="card-icon">
                   <FiZap />
-                  <span>Fast</span>
                 </div>
+                <h3 className="card-title">Lightning Performance</h3>
               </div>
-              <div className="hero-cloud">
-                <FiCloud className="cloud-icon" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Security Section */}
-      <section id="security" className="security">
-        <div className="container">
-          <div className="section-header">
-            <h2>Current Security Features</h2>
-            <p>Security features currently implemented in SkyCrate</p>
-          </div>
-          <div className="security-grid">
-            <div className="security-card card">
-              <div className="security-icon">
-                <FiLock />
-              </div>
-              <h3>JWT Authentication</h3>
-              <p>Secure user authentication using JSON Web Tokens (JWT) for session management.</p>
-            </div>
-            <div className="security-card card">
-              <div className="security-icon">
-                <FiShield />
-              </div>
-              <h3>Isolated User Buckets</h3>
-              <p>Each user has an isolated AWS S3 bucket to ensure data separation and security.</p>
-            </div>
-            <div className="security-card card">
-              <div className="security-icon">
-                <FiAward />
-              </div>
-              <h3>Pre-Signed URLs</h3>
-              <p>Secure file uploads and downloads using AWS pre-signed URLs with limited access and expiration.</p>
-            </div>
-            <div className="security-card card">
-              <div className="security-icon">
-                <FiGlobe />
-              </div>
-              <h3>Role-Based Access Control</h3>
-              <p>Access to files and operations is controlled based on user roles and permissions.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Cost Savings Section */}
-      <section id="cost-savings" className="cost-savings">
-        <div className="container">
-          <div className="section-header">
-            <h2>Save up to 84% on cloud storage costs</h2>
-            <p>Automatic optimization using AWS S3 storage classes based on your file usage patterns</p>
-          </div>
-          <div className="savings-grid">
-            <div className="savings-card card">
-              <div className="savings-icon">
-                <FiZap />
-              </div>
-              <h3>Large Video Files</h3>
-              <div className="savings-comparison">
-                <div className="old-cost">
-                  <span className="cost-label">Standard Storage:</span>
-                  <span className="cost-amount">$0.023/GB</span>
-                </div>
-                <div className="new-cost">
-                  <span className="cost-label">Standard-IA:</span>
-                  <span className="cost-amount">$0.0125/GB</span>
-                </div>
-                <div className="savings-amount">
-                  <span>46% Savings</span>
-                </div>
-              </div>
-            </div>
-            <div className="savings-card card">
-              <div className="savings-icon">
-                <FiServer />
-              </div>
-              <h3>Archive Files</h3>
-              <div className="savings-comparison">
-                <div className="old-cost">
-                  <span className="cost-label">Standard Storage:</span>
-                  <span className="cost-amount">$0.023/GB</span>
-                </div>
-                <div className="new-cost">
-                  <span className="cost-label">Glacier:</span>
-                  <span className="cost-amount">$0.0036/GB</span>
-                </div>
-                <div className="savings-amount">
-                  <span>84% Savings</span>
-                </div>
-              </div>
-            </div>
-            <div className="savings-card card">
-              <div className="savings-icon">
-                <FiShield />
-              </div>
-              <h3>Mixed Workload (100GB)</h3>
-              <div className="savings-comparison">
-                <div className="old-cost">
-                  <span className="cost-label">All Standard:</span>
-                  <span className="cost-amount">$2.30/month</span>
-                </div>
-                <div className="new-cost">
-                  <span className="cost-label">Optimized:</span>
-                  <span className="cost-amount">$1.20/month</span>
-                </div>
-                <div className="savings-amount">
-                  <span>48% Savings</span>
+              <div className="card-content">
+                <p className="card-description">
+                  Global CDN, instant access, and 99.9% uptime guarantee
+                </p>
+                <div className="performance-metrics">
+                  <div className="metric">
+                    <span className="metric-number">99.9%</span>
+                    <span className="metric-text">Uptime</span>
+                  </div>
+                  <div className="metric">
+                    <span className="metric-number">&lt;100ms</span>
+                    <span className="metric-text">Response</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -236,203 +219,239 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Storage Classes Section */}
-      <section id="storage-classes" className="storage-classes">
-        <div className="container">
-          <div className="section-header">
-            <h2>Smart Storage That Saves You Money</h2>
-            <p>SkyCrate automatically chooses the perfect storage type for each file, so you pay less without thinking about it</p>
+      {/* Modern Pricing Section */}
+      <section id="pricing" className="modern-pricing">
+        <div className="pricing-container">
+          <div className="pricing-intro">
+            <h2 className="pricing-title">Transparent Pricing</h2>
+            <p className="pricing-subtitle">
+              Pay only for what you use with automatic optimization that saves you money
+            </p>
           </div>
-          <div className="classes-grid">
-            <div className="class-card card featured">
-              <div className="class-header">
-                <div className="class-icon">⚡</div>
-                <h3>Lightning Fast</h3>
-                <span className="class-price">$0.029/GB/month</span>
-                <span className="margin-info">25% service margin</span>
+          
+          <div className="pricing-tiers">
+            <div className="tier-card tier-featured">
+              <div className="tier-badge">
+                <FiStar className="badge-icon" />
+                <span>Most Popular</span>
               </div>
-              <p className="class-description">Perfect for photos, documents, and files you use every day</p>
-              <ul className="class-features">
+              <div className="tier-header">
+                <div className="tier-icon">⚡</div>
+                <h3 className="tier-name">Lightning Fast</h3>
+                <div className="tier-price">$0.029<span>/GB/month</span></div>
+              </div>
+              <p className="tier-description">Perfect for active files and daily use</p>
+              <ul className="tier-features">
                 <li>Instant access anytime</li>
-                <li>Best for active files</li>
-                <li>No waiting, ever</li>
+                <li>Best for photos & documents</li>
+                <li>No retrieval delays</li>
+                <li>25% service margin</li>
               </ul>
-              <div className="class-badge">Most Popular</div>
             </div>
-            <div className="class-card card">
-              <div className="class-header">
-                <div className="class-icon">💎</div>
-                <h3>Smart Saver</h3>
-                <span className="class-price">$0.017/GB/month</span>
-                <span className="margin-info">35% service margin</span>
+            
+            <div className="tier-card">
+              <div className="tier-header">
+                <div className="tier-icon">💎</div>
+                <h3 className="tier-name">Smart Saver</h3>
+                <div className="tier-price">$0.017<span>/GB/month</span></div>
               </div>
-              <p className="class-description">Great for large videos and files you don't access often</p>
-              <ul className="class-features">
-                <li>46% base cost savings</li>
+              <p className="tier-description">Great for large videos and occasional access</p>
+              <ul className="tier-features">
+                <li>46% cost savings</li>
                 <li>Still instant access</li>
                 <li>Perfect for big files</li>
+                <li>35% service margin</li>
               </ul>
             </div>
-            <div className="class-card card">
-              <div className="class-header">
-                <div className="class-icon">🏔️</div>
-                <h3>Archive Pro</h3>
-                <span className="class-price">$0.006/GB/month</span>
-                <span className="margin-info">45% service margin</span>
+            
+            <div className="tier-card">
+              <div className="tier-header">
+                <div className="tier-icon">🏔️</div>
+                <h3 className="tier-name">Archive Pro</h3>
+                <div className="tier-price">$0.006<span>/GB/month</span></div>
               </div>
-              <p className="class-description">Ultra-cheap storage for important backups</p>
-              <ul className="class-features">
-                <li>83% base cost savings</li>
-                <li>Instant when needed</li>
+              <p className="tier-description">Ultra-cheap storage for backups</p>
+              <ul className="tier-features">
+                <li>83% cost savings</li>
+                <li>Instant retrieval</li>
                 <li>Professional archiving</li>
-              </ul>
-            </div>
-            <div className="class-card card">
-              <div className="class-header">
-                <div className="class-icon">🧊</div>
-                <h3>Deep Freeze</h3>
-                <span className="class-price">$0.005/GB/month</span>
-                <span className="margin-info">50% service margin</span>
-              </div>
-              <p className="class-description">Lock away old files at rock-bottom prices</p>
-              <ul className="class-features">
-                <li>84% base cost savings</li>
-                <li>1-5 minute access</li>
-                <li>Long-term storage</li>
-              </ul>
-            </div>
-            <div className="class-card card">
-              <div className="class-header">
-                <div className="class-icon">🏛️</div>
-                <h3>Vault Keeper</h3>
-                <span className="class-price">$0.002/GB/month</span>
-                <span className="margin-info">60% service margin</span>
-              </div>
-              <p className="class-description">Digital safety deposit box for permanent archives</p>
-              <ul className="class-features">
-                <li>96% base cost savings</li>
-                <li>12-hour retrieval</li>
-                <li>Set and forget</li>
+                <li>45% service margin</li>
               </ul>
             </div>
           </div>
-          <div className="storage-automation">
-            <div className="automation-card">
-              <h3>🤖 Automatic Optimization</h3>
-              <p>SkyCrate's AI automatically picks the best storage type for each file. Upload a vacation video? It goes to Smart Saver. Old tax documents? Straight to Archive Pro. You save money without lifting a finger.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="features">
-        <div className="container">
-          <div className="section-header">
-            <h2>Why choose SkyCrate?</h2>
-            <p>Experience the next generation of secure cloud storage with intelligent cost optimization</p>
-          </div>
-          <div className="features-grid">
-            <div className="feature-card card">
-              <div className="feature-icon">
-                <FiCloud />
-              </div>
-              <h3>AWS S3 Optimization</h3>
-              <p>Automatic storage class selection based on file type, size, and access patterns for maximum cost savings.</p>
-            </div>
-            <div className="feature-card card">
-              <div className="feature-icon">
-                <FiShield />
-              </div>
-              <h3>Bank-Level Security</h3>
-              <p>Your files are encrypted with military-grade security. Your privacy is our top priority.</p>
-            </div>
-            <div className="feature-card card">
-              <div className="feature-icon">
+          
+          <div className="automation-highlight">
+            <div className="automation-content">
+              <div className="automation-icon">
                 <FiZap />
               </div>
-              <h3>Real-Time Cost Analytics</h3>
-              <p>Monitor your storage costs in real-time with detailed breakdowns by storage class and usage patterns.</p>
-            </div>
-            <div className="feature-card card">
-              <div className="feature-icon">
-                <FiSmartphone />
+              <div className="automation-text">
+                <h3>Automatic Optimization</h3>
+                <p>Our AI automatically selects the best storage tier for each file, maximizing your savings without any effort</p>
               </div>
-              <h3>Cross-Platform</h3>
-              <p>Access your files from any device - desktop, tablet, or mobile. Always in sync.</p>
-            </div>
-            <div className="feature-card card">
-              <div className="feature-icon">
-                <FiUsers />
-              </div>
-              <h3>Easy Sharing</h3>
-              <p>Share files with anyone using secure links. Control who can view and edit your files.</p>
-            </div>
-            <div className="feature-card card">
-              <div className="feature-icon">
-                <FiLock />
-              </div>
-              <h3>Pay-As-You-Go Billing</h3>
-              <p>Transparent pricing with 30% margin over AWS costs. Only pay for what you use.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      {/* Removed pricing section as per user request since pay-as-you-go model is offered */}
+      {/* Modern Features Section */}
+      <section id="features" className="modern-features">
+        <div className="features-container">
+          <div className="features-intro">
+            <h2 className="features-title">Why Choose SkyCrate?</h2>
+            <p className="features-subtitle">
+              Next-generation cloud storage with intelligent optimization and enterprise-grade security
+            </p>
+          </div>
+          
+          <div className="features-showcase">
+            <div className="feature-item">
+              <div className="feature-visual">
+                <FiCloud className="feature-icon" />
+              </div>
+              <div className="feature-details">
+                <h3 className="feature-name">AWS S3 Optimization</h3>
+                <p className="feature-text">
+                  Automatic storage class selection based on file patterns for maximum cost savings
+                </p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <div className="feature-visual">
+                <FiShield className="feature-icon" />
+              </div>
+              <div className="feature-details">
+                <h3 className="feature-name">Bank-Level Security</h3>
+                <p className="feature-text">
+                  Military-grade encryption with isolated storage and role-based access control
+                </p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <div className="feature-visual">
+                <FiTrendingUp className="feature-icon" />
+              </div>
+              <div className="feature-details">
+                <h3 className="feature-name">Real-Time Analytics</h3>
+                <p className="feature-text">
+                  Monitor storage costs with detailed breakdowns and usage insights
+                </p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <div className="feature-visual">
+                <FiSmartphone className="feature-icon" />
+              </div>
+              <div className="feature-details">
+                <h3 className="feature-name">Cross-Platform Access</h3>
+                <p className="feature-text">
+                  Seamless file access across desktop, tablet, and mobile devices
+                </p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <div className="feature-visual">
+                <FiUsers className="feature-icon" />
+              </div>
+              <div className="feature-details">
+                <h3 className="feature-name">Secure Sharing</h3>
+                <p className="feature-text">
+                  Share files with controlled access and time-limited secure links
+                </p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <div className="feature-visual">
+                <FiLock className="feature-icon" />
+              </div>
+              <div className="feature-details">
+                <h3 className="feature-name">Pay-As-You-Go</h3>
+                <p className="feature-text">
+                  Transparent pricing with no hidden fees - only pay for what you use
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* CTA Section */}
-      <section className="cta">
-        <div className="container">
+      {/* Modern CTA Section */}
+      <section className="modern-cta">
+        <div className="cta-container">
           <div className="cta-content">
-            <h2>Ready to get started?</h2>
-            <p>Join millions of users who trust SkyCrate with their files</p>
-            <Link to="/register" className="btn btn-primary btn-lg">
-              Start Your Free Trial
-              <FiArrowRight />
-            </Link>
+            <h2 className="cta-heading">Ready to Optimize Your Storage?</h2>
+            <p className="cta-text">
+              Join thousands of users saving up to 84% on cloud storage costs
+            </p>
+            <div className="cta-actions">
+              <Link to="/register" className="cta-button-primary">
+                <span>Start Free Trial</span>
+                <FiArrowRight className="cta-arrow" />
+              </Link>
+            </div>
+            <div className="cta-trust">
+              <span className="trust-text">No credit card required • 30-day free trial</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-section footer-logo-section">
+      {/* Modern Minimal Footer */}
+      <footer className="modern-footer">
+        <div className="footer-container">
+          <div className="footer-main">
+            <div className="footer-brand">
               <div className="footer-logo">
-                <FiCloud />
-                <span>SkyCrate</span>
+                <FiCloud className="footer-logo-icon" />
+                <span className="footer-logo-text">SkyCrate</span>
               </div>
-              <p>Your trusted cloud storage solution</p>
+              <p className="footer-tagline">Smart cloud storage that saves money</p>
             </div>
-            <div className="footer-section">
-              <h4>Product</h4>
-              <a href="#features">Features</a>
-              <a href="#security">Security</a>
-            </div>
-            <div className="footer-section">
-              <h4>Company</h4>
-              <a href="#about">About</a>
-              <a href="#careers">Careers</a>
-              <a href="#contact">Contact</a>
-            </div>
-            <div className="footer-section">
-              <h4>Support</h4>
-              <a href="#help">Help Center</a>
-              <a href="#docs">Documentation</a>
-              <a href="#status">Status</a>
-            </div>
-            <div className="footer-section social-media">
-              <h4>Follow Us</h4>
-              <a href="https://twitter.com/skycrate" target="_blank" rel="noopener noreferrer">Twitter</a>
-              <a href="https://linkedin.com/company/skycrate" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-              <a href="https://github.com/skycrate" target="_blank" rel="noopener noreferrer">GitHub</a>
+            
+            <div className="footer-links">
+              <div className="footer-group">
+                <h4 className="footer-heading">Product</h4>
+                <a href="#features" className="footer-link">Features</a>
+                <a href="#solutions" className="footer-link">Solutions</a>
+                <a href="#pricing" className="footer-link">Pricing</a>
+              </div>
+              
+              <div className="footer-group">
+                <h4 className="footer-heading">Company</h4>
+                <a href="#about" className="footer-link">About</a>
+                <a href="#contact" className="footer-link">Contact</a>
+                <a href="#careers" className="footer-link">Careers</a>
+              </div>
+              
+              <div className="footer-group">
+                <h4 className="footer-heading">Support</h4>
+                <a href="#help" className="footer-link">Help Center</a>
+                <a href="#docs" className="footer-link">Documentation</a>
+                <a href="#status" className="footer-link">Status</a>
+              </div>
             </div>
           </div>
+          
           <div className="footer-bottom">
-            <p>&copy; 2024 SkyCrate. All rights reserved.</p>
+            <div className="footer-legal">
+              <span>&copy; 2024 SkyCrate. All rights reserved.</span>
+            </div>
+            <div className="footer-social">
+              <a href="https://twitter.com/skycrate" target="_blank" rel="noopener noreferrer" className="social-link">
+                Twitter
+              </a>
+              <a href="https://linkedin.com/company/skycrate" target="_blank" rel="noopener noreferrer" className="social-link">
+                LinkedIn
+              </a>
+              <a href="https://github.com/skycrate" target="_blank" rel="noopener noreferrer" className="social-link">
+                GitHub
+              </a>
+            </div>
           </div>
         </div>
       </footer>
