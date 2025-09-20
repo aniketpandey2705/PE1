@@ -12,10 +12,12 @@ import {
   FiZap,
   FiInfo
 } from 'react-icons/fi';
+import { useNotifications } from '../contexts/NotificationContext';
 // import { fileAPI } from '../services/api'; // Removed unused import
 import './VersionHistory.css';
 
 const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
+  const { showSuccess, showError } = useNotifications();
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,27 +25,24 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
   const [newComment, setNewComment] = useState('');
   const [optimizing, setOptimizing] = useState(false);
 
-  useEffect(() => {
-    if (fileId) {
-      fetchVersionHistory();
-    }
-  }, [fileId, fetchVersionHistory]);
-
   const fetchVersionHistory = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/versions/${fileId}/versions?includeCosts=true`, {
+      setError('');
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/files/${fileId}/versions`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
-
+      
       if (!response.ok) {
         throw new Error('Failed to fetch version history');
       }
-
+      
       const data = await response.json();
-      setVersions(data);
+      setVersions(data.versions || []);
     } catch (error) {
       console.error('Error fetching version history:', error);
       setError('Failed to load version history');
@@ -51,6 +50,14 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       setLoading(false);
     }
   }, [fileId]);
+
+  useEffect(() => {
+    if (fileId) {
+      fetchVersionHistory();
+    }
+  }, [fileId, fetchVersionHistory]);
+
+
 
   const handleRestoreVersion = async (versionId, versionNumber) => {
     if (!window.confirm(`Restore version ${versionNumber}? This will make it the current active version.`)) {
@@ -75,7 +82,7 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       }
     } catch (error) {
       console.error('Error restoring version:', error);
-      alert('Failed to restore version. Please try again.');
+      showError('Restore failed', 'Failed to restore version. Please try again.');
     }
   };
 
@@ -100,7 +107,7 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       await fetchVersionHistory();
     } catch (error) {
       console.error('Error deleting version:', error);
-      alert(error.message);
+      showError('Delete failed', error.message);
     }
   };
 
@@ -127,7 +134,7 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error downloading version:', error);
-      alert('Failed to download version. Please try again.');
+      showError('Download failed', 'Failed to download version. Please try again.');
     }
   };
 
@@ -151,7 +158,7 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       setNewComment('');
     } catch (error) {
       console.error('Error updating comment:', error);
-      alert('Failed to update comment. Please try again.');
+      showError('Update failed', 'Failed to update comment. Please try again.');
     }
   };
 
@@ -180,11 +187,14 @@ const VersionHistory = ({ fileId, fileName, onClose, onVersionRestore }) => {
       }
 
       const result = await response.json();
-      alert(`Optimized ${result.optimizedCount} versions. Estimated monthly savings: $${result.totalSavings.toFixed(4)}`);
+      showSuccess(
+        'Optimization completed',
+        `Optimized ${result.optimizedCount} versions. Estimated monthly savings: $${result.totalSavings.toFixed(4)}`
+      );
       await fetchVersionHistory();
     } catch (error) {
       console.error('Error optimizing versions:', error);
-      alert('Failed to optimize versions. Please try again.');
+      showError('Optimization failed', 'Failed to optimize versions. Please try again.');
     } finally {
       setOptimizing(false);
     }

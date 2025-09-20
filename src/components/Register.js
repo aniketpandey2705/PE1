@@ -1,13 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiCloud } from 'react-icons/fi';
 import { authAPI } from '../services/api';
 import './Auth.css';
+import '../styles/animations.css';
 
 const Register = () => {
   const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const formRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    // Trigger entrance animation
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+      
+      // Trigger stagger animations
+      const staggerContainers = document.querySelectorAll('.stagger-container');
+      staggerContainers.forEach((container) => {
+        container.classList.add('visible');
+        const children = container.querySelectorAll('.stagger-fade-up');
+        children.forEach((child, index) => {
+          setTimeout(() => {
+            child.classList.add('stagger-visible');
+          }, index * 100);
+        });
+      });
+    }, 100);
+
     const handleMouseMove = (e) => {
       const container = document.querySelector('.auth-container');
       if (container) {
@@ -20,20 +49,12 @@ const Register = () => {
     };
 
     document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
   }, []);
-
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [passwordStrength, setPasswordStrength] = useState('');
 
   const checkPasswordStrength = (password) => {
     let strength = '';
@@ -47,6 +68,14 @@ const Register = () => {
       strength = 'Strong';
     }
     setPasswordStrength(strength);
+  };
+
+  const handleInputChange = (setter, value) => {
+    setter(value);
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -108,10 +137,10 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-container">
+    <div className={`auth-container ${isVisible ? 'visible' : ''}`}>
       <button 
         onClick={() => navigate('/')} 
-        className="back-button"
+        className="back-button animate-on-scroll-slide-left"
         style={{
           position: 'absolute',
           top: '20px',
@@ -130,102 +159,114 @@ const Register = () => {
         }}>
         ← Back
       </button>
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-logo">
+      <div className={`auth-card auth-card-entrance ${isVisible ? 'visible' : ''}`}>
+        <div className="auth-header stagger-container">
+          <div className="auth-logo stagger-fade-up">
             <FiCloud /> SkyCrate
           </div>
-          <h1>Register</h1>
-          <p>Create your account to access your cloud storage</p>
+          <h1 className="stagger-fade-up">Register</h1>
+          <p className="stagger-fade-up">Create your account to access your cloud storage</p>
         </div>
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <div className="input-wrapper">
+        <form ref={formRef} onSubmit={handleSubmit} className="auth-form stagger-container">
+          <div className="form-group stagger-fade-up">
+            <label htmlFor="username" className="form-label">Username</label>
+            <div className="input-wrapper form-input-animated">
               <span className="input-icon"><FiUser /></span>
               <input
                 type="text"
                 id="username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => handleInputChange(setUsername, e.target.value)}
                 placeholder="Enter your username"
                 required
+                className="smooth-input"
               />
             </div>
           </div>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <div className="input-wrapper">
+          <div className="form-group stagger-fade-up">
+            <label htmlFor="email" className="form-label">Email</label>
+            <div className="input-wrapper form-input-animated">
               <span className="input-icon"><FiMail /></span>
               <input
                 type="email"
                 id="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => handleInputChange(setEmail, e.target.value)}
                 placeholder="Enter your email address"
                 required
+                className="smooth-input"
               />
             </div>
           </div>
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <div className="input-wrapper">
+          <div className="form-group stagger-fade-up">
+            <label htmlFor="password" className="form-label">Password</label>
+            <div className="input-wrapper form-input-animated">
               <span className="input-icon"><FiLock /></span>
               <input
                 type={showPassword ? 'text' : 'password'}
                 id="password"
                 value={password}
                 onChange={(e) => {
-                  setPassword(e.target.value);
+                  handleInputChange(setPassword, e.target.value);
                   checkPasswordStrength(e.target.value);
                 }}
                 placeholder="Enter your password"
                 required
+                className="smooth-input"
               />
               <button
                 type="button"
-                className="password-toggle"
+                className="password-toggle interactive-scale"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
             {passwordStrength && (
-              <p className={`password-strength ${passwordStrength.toLowerCase()}`}>
+              <p className={`password-strength ${passwordStrength.toLowerCase()} strength-indicator`}>
                 Strength: {passwordStrength}
               </p>
             )}
           </div>
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <div className="input-wrapper">
+          <div className="form-group stagger-fade-up">
+            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+            <div className="input-wrapper form-input-animated">
               <span className="input-icon"><FiLock /></span>
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => handleInputChange(setConfirmPassword, e.target.value)}
                 placeholder="Confirm your password"
                 required
+                className="smooth-input"
               />
               <button
                 type="button"
-                className="password-toggle"
+                className="password-toggle interactive-scale"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
           </div>
-          {error && <p className="error-message">{error}</p>}
-          <button type="submit" className="auth-button" disabled={loading}>
+          {error && (
+            <div className="error-message error-slide-in">
+              {error}
+            </div>
+          )}
+          <button 
+            type="submit" 
+            className={`auth-button btn-animated stagger-fade-up ${loading ? 'btn-loading' : ''}`} 
+            disabled={loading}
+          >
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
-        <div className="auth-footer">
+        <div className="auth-footer stagger-fade-up">
           <p>
             Already have an account?{' '}
-            <Link to="/login" className="auth-link">
+            <Link to="/login" className="auth-link interactive-glow">
               Login
             </Link>
           </p>

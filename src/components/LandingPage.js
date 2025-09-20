@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FiCloud, 
@@ -19,13 +19,83 @@ import {
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import './LandingPage.css';
+import '../styles/animations.css';
 
 const LandingPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [scrollProgress, setScrollProgress] = React.useState(0);
   const { toggleTheme, isDark } = useTheme();
+  const observerRef = useRef(null);
+
+  useEffect(() => {
+    // Initialize Intersection Observer for scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          
+          // Handle stagger animations
+          if (entry.target.classList.contains('stagger-container')) {
+            const children = entry.target.querySelectorAll('.stagger-fade-up, .stagger-slide-left, .stagger-scale, .solution-card-reveal, .pricing-tier-reveal, .feature-item-reveal');
+            children.forEach((child, index) => {
+              setTimeout(() => {
+                child.classList.add('stagger-visible');
+              }, index * 100);
+            });
+          }
+        }
+      });
+    }, observerOptions);
+
+    // Observe all animated elements
+    const animatedElements = document.querySelectorAll(
+      '.animate-on-scroll, .animate-on-scroll-fade-up, .animate-on-scroll-scale-up, .section-reveal, .hero-section-reveal, .content-block-reveal, .stagger-container'
+    );
+    
+    animatedElements.forEach((el) => {
+      observerRef.current.observe(el);
+    });
+
+    // Scroll progress indicator and parallax effects
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (window.scrollY / totalHeight) * 100;
+      setScrollProgress(Math.min(progress, 100));
+
+      // Subtle parallax effect for hero elements
+      const scrolled = window.scrollY;
+      const parallaxElements = document.querySelectorAll('.parallax-element');
+      
+      parallaxElements.forEach((element, index) => {
+        const speed = 0.5 + (index * 0.1); // Different speeds for different elements
+        const yPos = -(scrolled * speed);
+        element.style.transform = `translateY(${yPos}px)`;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   return (
     <div className="landing-page">
+      {/* Scroll Progress Indicator */}
+      <div 
+        className="scroll-progress-bar" 
+        style={{ width: `${scrollProgress}%` }}
+      />
+      
       {/* Modern Floating Navigation */}
       <nav className="modern-navbar">
         <div className="nav-container">
@@ -64,71 +134,71 @@ const LandingPage = () => {
       </nav>
 
       {/* Modern Full-Screen Hero Section */}
-      <section className="modern-hero">
+      <section className="modern-hero hero-section-reveal">
         <div className="hero-container">
           <div className="hero-layout">
-            <div className="hero-content">
-              <div className="hero-badge">
+            <div className="hero-content animate-on-scroll-fade-up">
+              <div className="hero-badge animate-on-scroll-scale-up" style={{'--animation-duration': '400ms', '--animation-easing': 'var(--ease-bounce)'}}>
                 <FiAward className="badge-icon" />
                 <span className="badge-text">AWS S3 Optimized Storage</span>
               </div>
               
-              <h1 className="hero-heading">
+              <h1 className="hero-heading animate-on-scroll-fade-up" style={{'--animation-duration': '600ms'}}>
                 Smart Cloud Storage
                 <span className="hero-highlight">That Saves Money</span>
               </h1>
               
-              <p className="hero-description">
+              <p className="hero-description animate-on-scroll-fade-up" style={{'--animation-duration': '500ms'}}>
                 Automatic AWS S3 optimization with up to 84% cost savings. 
                 Pay-as-you-go billing with intelligent storage class selection.
               </p>
               
-              <div className="hero-cta">
-                <Link to="/register" className="cta-primary">
+              <div className="hero-cta animate-on-scroll-scale-up" style={{'--animation-duration': '500ms', '--animation-easing': 'var(--ease-bounce)'}}>
+                <Link to="/register" className="cta-primary interactive-lift">
                   <span>Start Free Trial</span>
                   <FiArrowRight className="cta-icon" />
                 </Link>
-                <button className="cta-secondary">
+                <button className="cta-secondary interactive-scale">
                   <span>Watch Demo</span>
                 </button>
               </div>
               
-              <div className="hero-metrics">
-                <div className="metric-item">
+              <div className="hero-metrics stagger-container animate-on-scroll">
+                <div className="metric-item stagger-fade-up">
                   <div className="metric-value">84%</div>
                   <div className="metric-label">Cost Savings</div>
                 </div>
-                <div className="metric-item">
+                <div className="metric-item stagger-fade-up">
                   <div className="metric-value">99.9%</div>
                   <div className="metric-label">Uptime</div>
                 </div>
-                <div className="metric-item">
+                <div className="metric-item stagger-fade-up">
                   <div className="metric-value">10k+</div>
                   <div className="metric-label">Users</div>
                 </div>
               </div>
             </div>
             
-            <div className="hero-visual">
-              <div className="visual-grid">
-                <div className="visual-card card-secure">
+            <div className="hero-visual animate-on-scroll-scale-up parallax-element" style={{'--animation-duration': '700ms'}}>
+              <div className="visual-grid stagger-container">
+                <div className="visual-card card-secure stagger-scale interactive-lift">
                   <FiShield className="visual-icon" />
                   <span className="visual-label">Bank-Level Security</span>
                 </div>
-                <div className="visual-card card-fast">
+                <div className="visual-card card-fast stagger-scale interactive-lift">
                   <FiZap className="visual-icon" />
                   <span className="visual-label">Lightning Fast</span>
                 </div>
-                <div className="visual-card card-smart">
+                <div className="visual-card card-smart stagger-scale interactive-lift">
                   <FiTrendingUp className="visual-icon" />
                   <span className="visual-label">Smart Optimization</span>
                 </div>
-                <div className="visual-card card-reliable">
+                <div className="visual-card card-reliable stagger-scale interactive-lift">
                   <FiDatabase className="visual-icon" />
                   <span className="visual-label">99.9% Reliable</span>
                 </div>
               </div>
-              <div className="hero-centerpiece">
+              <div className="hero-centerpiece parallax-element">
                 <FiCloud className="centerpiece-icon" />
                 <div className="centerpiece-glow"></div>
               </div>
@@ -138,17 +208,17 @@ const LandingPage = () => {
       </section>
 
       {/* Modern Solutions Section */}
-      <section id="solutions" className="modern-solutions">
+      <section id="solutions" className="modern-solutions section-reveal">
         <div className="solutions-container">
-          <div className="section-intro">
+          <div className="section-intro content-block-reveal">
             <h2 className="section-title">Smart Storage Solutions</h2>
             <p className="section-subtitle">
               Automatic optimization and enterprise-grade security that saves you up to 84% on storage costs
             </p>
           </div>
           
-          <div className="solutions-grid">
-            <div className="solution-card card-primary">
+          <div className="solutions-grid stagger-container">
+            <div className="solution-card card-primary solution-card-reveal interactive-lift">
               <div className="card-header">
                 <div className="card-icon">
                   <FiTrendingUp />
@@ -172,7 +242,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="solution-card card-secondary">
+            <div className="solution-card card-secondary solution-card-reveal interactive-lift">
               <div className="card-header">
                 <div className="card-icon">
                   <FiShield />
@@ -192,7 +262,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="solution-card card-accent">
+            <div className="solution-card card-accent solution-card-reveal interactive-lift">
               <div className="card-header">
                 <div className="card-icon">
                   <FiZap />
@@ -220,17 +290,17 @@ const LandingPage = () => {
       </section>
 
       {/* Modern Pricing Section */}
-      <section id="pricing" className="modern-pricing">
+      <section id="pricing" className="modern-pricing section-reveal">
         <div className="pricing-container">
-          <div className="pricing-intro">
+          <div className="pricing-intro content-block-reveal">
             <h2 className="pricing-title">Transparent Pricing</h2>
             <p className="pricing-subtitle">
               Pay only for what you use with automatic optimization that saves you money
             </p>
           </div>
           
-          <div className="pricing-tiers">
-            <div className="tier-card tier-featured">
+          <div className="pricing-tiers stagger-container">
+            <div className="tier-card tier-featured pricing-tier-reveal interactive-lift">
               <div className="tier-badge">
                 <FiStar className="badge-icon" />
                 <span>Most Popular</span>
@@ -249,7 +319,7 @@ const LandingPage = () => {
               </ul>
             </div>
             
-            <div className="tier-card">
+            <div className="tier-card pricing-tier-reveal interactive-lift">
               <div className="tier-header">
                 <div className="tier-icon">💎</div>
                 <h3 className="tier-name">Smart Saver</h3>
@@ -264,7 +334,7 @@ const LandingPage = () => {
               </ul>
             </div>
             
-            <div className="tier-card">
+            <div className="tier-card pricing-tier-reveal interactive-lift">
               <div className="tier-header">
                 <div className="tier-icon">🏔️</div>
                 <h3 className="tier-name">Archive Pro</h3>
@@ -280,7 +350,7 @@ const LandingPage = () => {
             </div>
           </div>
           
-          <div className="automation-highlight">
+          <div className="automation-highlight animate-on-scroll-scale-up interactive-lift">
             <div className="automation-content">
               <div className="automation-icon">
                 <FiZap />
@@ -295,17 +365,17 @@ const LandingPage = () => {
       </section>
 
       {/* Modern Features Section */}
-      <section id="features" className="modern-features">
+      <section id="features" className="modern-features section-reveal">
         <div className="features-container">
-          <div className="features-intro">
+          <div className="features-intro content-block-reveal">
             <h2 className="features-title">Why Choose SkyCrate?</h2>
             <p className="features-subtitle">
               Next-generation cloud storage with intelligent optimization and enterprise-grade security
             </p>
           </div>
           
-          <div className="features-showcase">
-            <div className="feature-item">
+          <div className="features-showcase stagger-container">
+            <div className="feature-item feature-item-reveal interactive-lift">
               <div className="feature-visual">
                 <FiCloud className="feature-icon" />
               </div>
@@ -317,7 +387,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="feature-item">
+            <div className="feature-item feature-item-reveal interactive-lift">
               <div className="feature-visual">
                 <FiShield className="feature-icon" />
               </div>
@@ -329,7 +399,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="feature-item">
+            <div className="feature-item feature-item-reveal interactive-lift">
               <div className="feature-visual">
                 <FiTrendingUp className="feature-icon" />
               </div>
@@ -341,7 +411,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="feature-item">
+            <div className="feature-item feature-item-reveal interactive-lift">
               <div className="feature-visual">
                 <FiSmartphone className="feature-icon" />
               </div>
@@ -353,7 +423,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="feature-item">
+            <div className="feature-item feature-item-reveal interactive-lift">
               <div className="feature-visual">
                 <FiUsers className="feature-icon" />
               </div>
@@ -365,7 +435,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="feature-item">
+            <div className="feature-item feature-item-reveal interactive-lift">
               <div className="feature-visual">
                 <FiLock className="feature-icon" />
               </div>
@@ -381,15 +451,15 @@ const LandingPage = () => {
       </section>
 
       {/* Modern CTA Section */}
-      <section className="modern-cta">
+      <section className="modern-cta section-reveal">
         <div className="cta-container">
-          <div className="cta-content">
+          <div className="cta-content animate-on-scroll-scale-up">
             <h2 className="cta-heading">Ready to Optimize Your Storage?</h2>
             <p className="cta-text">
               Join thousands of users saving up to 84% on cloud storage costs
             </p>
             <div className="cta-actions">
-              <Link to="/register" className="cta-button-primary">
+              <Link to="/register" className="cta-button-primary interactive-lift">
                 <span>Start Free Trial</span>
                 <FiArrowRight className="cta-arrow" />
               </Link>

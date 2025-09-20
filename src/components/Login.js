@@ -1,12 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiCloud } from 'react-icons/fi';
 import { authAPI } from '../services/api';
 import './Auth.css';
+import '../styles/animations.css';
 import LoadingScreen from './LoadingScreen';
 
 const Login = () => {
-  React.useEffect(() => {
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    // Trigger entrance animation
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+      
+      // Trigger stagger animations
+      const staggerContainers = document.querySelectorAll('.stagger-container');
+      staggerContainers.forEach((container) => {
+        container.classList.add('visible');
+        const children = container.querySelectorAll('.stagger-fade-up');
+        children.forEach((child, index) => {
+          setTimeout(() => {
+            child.classList.add('stagger-visible');
+          }, index * 100);
+        });
+      });
+    }, 100);
+
     const handleMouseMove = (e) => {
       const container = document.querySelector('.auth-container');
       if (container) {
@@ -19,22 +48,23 @@ const Login = () => {
     };
 
     document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
   }, []);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+    
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -56,10 +86,10 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
+    <div className={`auth-container ${isVisible ? 'visible' : ''}`}>
       <button 
         onClick={() => navigate('/')} 
-        className="back-button"
+        className="back-button animate-on-scroll-slide-left"
         style={{
           position: 'absolute',
           top: '20px',
@@ -79,25 +109,25 @@ const Login = () => {
         ← Back
       </button>
       {loading && <LoadingScreen message="Preparing your SkyCrate..." />}
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="auth-logo">
+      <div className={`auth-card auth-card-entrance ${isVisible ? 'visible' : ''}`}>
+        <div className="auth-header stagger-container">
+          <div className="auth-logo stagger-fade-up">
             <FiCloud />
             <span>SkyCrate</span>
           </div>
-          <h1>Welcome back</h1>
-          <p>Sign in to access your cloud storage</p>
+          <h1 className="stagger-fade-up">Welcome back</h1>
+          <p className="stagger-fade-up">Sign in to access your cloud storage</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form ref={formRef} onSubmit={handleSubmit} className="auth-form stagger-container">
           {error && (
-            <div className="error-message">
+            <div className="error-message error-slide-in">
               {error}
             </div>
           )}
 
-          <div className="form-group">
-            <div className="input-wrapper">
+          <div className="form-group stagger-fade-up">
+            <div className="input-wrapper form-input-animated">
               <FiMail className="input-icon" />
               <input
                 type="email"
@@ -106,12 +136,13 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                className="smooth-input"
               />
             </div>
           </div>
 
-          <div className="form-group">
-            <div className="input-wrapper">
+          <div className="form-group stagger-fade-up">
+            <div className="input-wrapper form-input-animated">
               <FiLock className="input-icon" />
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -120,30 +151,31 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                className="smooth-input"
               />
               <button
                 type="button"
-                className="password-toggle"
+                className="password-toggle interactive-scale"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
+                {showPassword ? <FiEyeOff /> : <FiEyeOff />}
               </button>
             </div>
           </div>
 
           <button
             type="submit"
-            className="auth-button"
+            className={`auth-button btn-animated stagger-fade-up ${loading ? 'btn-loading' : ''}`}
             disabled={loading}
           >
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="auth-footer stagger-fade-up">
           <p>
             Don't have an account?{' '}
-            <Link to="/register" className="auth-link">
+            <Link to="/register" className="auth-link interactive-glow">
               Sign up
             </Link>
           </p>

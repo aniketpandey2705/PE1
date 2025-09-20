@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { FiX, FiClock, FiCheck, FiCopy, FiShare2 } from 'react-icons/fi';
 import { fileAPI } from '../services/api';
 import { useSharedFiles } from '../contexts/SharedFilesContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import './ShareModal.css';
 
 const ShareModal = ({ isOpen, onClose, fileDetails }) => {
-  const { sharedFiles, addSharedFile, updateSharedFileUrl, removeSharedFile } = useSharedFiles();
+  const { sharedFiles, addSharedFile, removeSharedFile } = useSharedFiles();
+  const { showError } = useNotifications();
   
   const [expiryTime, setExpiryTime] = useState('7d'); // Default 7 days
   const [customTime, setCustomTime] = useState({ value: '', unit: 'h' });
@@ -44,7 +46,7 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
       setTimeout(() => setIsCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
-      alert('Failed to copy URL');
+      showError('Copy failed', 'Failed to copy URL to clipboard');
     }
   };
 
@@ -81,7 +83,10 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
       setTimeLeft(expirySeconds);
     } catch (error) {
       console.error('Share URL generation error:', error);
-      alert(error.message || error.response?.data?.message || 'Failed to generate share URL');
+      showError(
+        'Share failed',
+        error.message || error.response?.data?.message || 'Failed to generate share URL'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +102,7 @@ const ShareModal = ({ isOpen, onClose, fileDetails }) => {
       setTimeLeft(null);
     } catch (error) {
       console.error('Remove shared file error:', error);
-      alert('Failed to remove shared file');
+      showError('Remove failed', 'Failed to remove shared file');
     } finally {
       setIsRemoving(false);
     }

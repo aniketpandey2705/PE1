@@ -147,6 +147,47 @@ export const fileAPI = {
     return response.data;
   },
 
+  // Bulk delete with progress tracking
+  bulkDeleteWithProgress: async (fileIds, onProgress) => {
+    const results = [];
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (let i = 0; i < fileIds.length; i++) {
+      const fileId = fileIds[i];
+      try {
+        await api.delete(`/files/${fileId}`);
+        results.push({ fileId, success: true });
+        successCount++;
+      } catch (error) {
+        results.push({ 
+          fileId, 
+          success: false, 
+          error: error.response?.data?.error || error.message 
+        });
+        failureCount++;
+      }
+
+      // Report progress
+      if (onProgress) {
+        onProgress({
+          current: i + 1,
+          total: fileIds.length,
+          successCount,
+          failureCount,
+          results
+        });
+      }
+    }
+
+    return {
+      message: `Bulk delete completed: ${successCount} successful, ${failureCount} failed`,
+      successCount,
+      failureCount,
+      results
+    };
+  },
+
   // Toggle star file
   toggleStar: async (fileId, isStarred) => {
     const response = await api.patch(`/files/${fileId}/star`, { isStarred });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import Storage from './Storage';
@@ -32,12 +32,15 @@ import {
 } from 'react-icons/fi';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSharedFiles } from '../contexts/SharedFilesContext';
+import { useNotifications } from '../contexts/NotificationContext';
 import { fileAPI, folderAPI, authAPI } from '../services/api';
 import StorageClassModal from './StorageClassModal';
 import ShareModal from './ShareModal';
 import DashboardBilling from './DashboardBilling';
 import VersionHistory from './VersionHistory';
+import NotificationTest from './NotificationTest';
 import './Dashboard.css';
+import '../styles/animations.css';
 
 const Dashboard = () => {
   const [files, setFiles] = useState([]);
@@ -45,6 +48,8 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(window.innerWidth <= 1200);
   const [viewMode, setViewMode] = useState('grid');
+  const [isVisible, setIsVisible] = useState(false);
+  const observerRef = useRef(null);
   
   useEffect(() => {
     const handleResize = () => {
@@ -75,6 +80,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toggleTheme, isDark } = useTheme();
   const { sharedFiles, addSharedFile, updateSharedFileUrl, removeSharedFile, isLoading: sharedFilesLoading, clearSharedFilesCache } = useSharedFiles();
+  const { showSuccess, showError, showWarning, showProgress, updateNotification, removeNotification } = useNotifications();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -87,13 +93,72 @@ const Dashboard = () => {
 
     setUser(JSON.parse(userData));
     fetchFiles();
+
+    // Initialize animations
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+      initializeAnimations();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [navigate]);
+
+  const initializeAnimations = () => {
+    // Initialize Intersection Observer for scroll animations
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          
+          // Handle stagger animations
+          if (entry.target.classList.contains('stagger-container')) {
+            const children = entry.target.querySelectorAll('.dashboard-card-reveal, .file-item-reveal, .stagger-fade-up');
+            children.forEach((child, index) => {
+              setTimeout(() => {
+                child.classList.add('stagger-visible');
+              }, index * 100);
+            });
+          }
+        }
+      });
+    }, observerOptions);
+
+    // Observe all animated elements
+    const animatedElements = document.querySelectorAll(
+      '.dashboard-section-reveal, .stagger-container, .animate-on-scroll'
+    );
+    
+    animatedElements.forEach((el) => {
+      observerRef.current.observe(el);
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  };
 
   const fetchFiles = async (folderId = null) => {
     try {
       setLoading(true);
       const filesData = await fileAPI.getFiles(folderId);
       setFiles(filesData);
+      
+      // Trigger file grid animations after files are loaded
+      setTimeout(() => {
+        const fileItems = document.querySelectorAll('.file-item-reveal');
+        fileItems.forEach((item, index) => {
+          setTimeout(() => {
+            item.classList.add('stagger-visible');
+          }, index * 50);
+        });
+      }, 100);
     } catch (error) {
       console.error('Error fetching files:', error);
     } finally {
@@ -151,7 +216,7 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
+      showError('Upload failed', 'Please try again.');
     } finally {
       setUploading(false);
     }
@@ -203,32 +268,62 @@ const Dashboard = () => {
   };
 
   const removeFile = async (fileId) => {
+    const item = files.find(f => f.id === fileId);
+    if (!item) {
+      showError('Error', 'Item not found.');
+      return;
+    }
+
+    const itemName = item.isFolder ? item.folderName : item.originalName;
+    const itemType = item.isFolder ? 'folder' : 'file';
+    
+    // Show progress notification
+    const notificationId = showProgress(
+      `Deleting ${itemType}`,
+      `Deleting "${itemName}"...`,
+      { progress: { current: 0, total: 1 } }
+    );
+
     try {
-      const item = files.find(f => f.id === fileId);
-      if (!item) {
-        alert('Item not found.');
-        return;
-      }
-      
       if (item.isFolder) {
         await folderAPI.deleteFolder(fileId);
       } else {
         await fileAPI.deleteFile(fileId);
       }
       
+      // Update progress to complete
+      updateNotification(notificationId, {
+        progress: { current: 1, total: 1 }
+      });
+
       // Update local state
       setFiles(prev => prev.filter(f => f.id !== fileId));
       setSelectedFiles(prev => prev.filter(id => id !== fileId));
+      
+      // Show success notification
+      removeNotification(notificationId);
+      showSuccess(
+        'Deleted successfully',
+        `"${itemName}" has been deleted.`
+      );
       
       // Refresh file list to ensure consistency
       await fetchFiles(currentFolderId);
       
     } catch (error) {
       console.error('Delete error:', error);
+      removeNotification(notificationId);
+      
       if (error.response?.status === 400 && error.response?.data?.error?.includes('contents')) {
-        alert('Cannot delete folder with contents. Please empty the folder first.');
+        showError(
+          'Cannot delete folder',
+          'Cannot delete folder with contents. Please empty the folder first.'
+        );
       } else {
-        alert('Failed to delete item. Please try again.');
+        showError(
+          'Delete failed',
+          `Failed to delete "${itemName}". Please try again.`
+        );
       }
     }
   };
@@ -241,7 +336,7 @@ const Dashboard = () => {
       ));
     } catch (error) {
       console.error('Star error:', error);
-      alert('Failed to update file star status.');
+      showError('Update failed', 'Failed to update file star status.');
     }
   };
 
@@ -268,7 +363,10 @@ const Dashboard = () => {
     }).length;
     
     if (folderCount > 0) {
-      alert(`${folderCount} folder(s) cannot be downloaded. Only files were downloaded.`);
+      showWarning(
+        'Download limitation', 
+        `${folderCount} folder(s) cannot be downloaded. Only files were downloaded.`
+      );
     }
   };
 
@@ -282,29 +380,78 @@ const Dashboard = () => {
     
     if (urls) {
       await navigator.clipboard.writeText(urls);
-      alert(`Copied ${shareableFiles.length} file link(s) to clipboard!`);
+      showSuccess(
+        'Links copied',
+        `Copied ${shareableFiles.length} file link(s) to clipboard!`
+      );
     } else {
-      alert('No files selected for sharing. Folders cannot be shared directly.');
+      showWarning(
+        'No files to share',
+        'No files selected for sharing. Folders cannot be shared directly.'
+      );
     }
   };
 
   const bulkDelete = async () => {
     if (!window.confirm(`Delete ${selectedFiles.length} selected item(s)?`)) return;
     
+    const totalItems = selectedFiles.length;
+    
+    // Show progress notification
+    const notificationId = showProgress(
+      'Deleting files',
+      `Deleting ${totalItems} item(s)...`,
+      { 
+        progress: { current: 0, total: totalItems },
+        actions: [
+          {
+            label: 'Cancel',
+            variant: 'secondary',
+            onClick: () => {
+              // Note: In a real implementation, you'd want to implement cancellation logic
+              removeNotification(notificationId);
+              showWarning('Deletion cancelled', 'Some items may have already been deleted.');
+            }
+          }
+        ]
+      }
+    );
+
     try {
       console.log('Starting bulk delete for:', selectedFiles);
       
-      // Use the new bulk delete API
-      const response = await fileAPI.bulkDelete(selectedFiles);
+      // Use the new bulk delete API with progress tracking
+      const response = await fileAPI.bulkDeleteWithProgress(selectedFiles, (progress) => {
+        updateNotification(notificationId, {
+          message: `Deleting ${totalItems} item(s)... (${progress.current}/${progress.total})`,
+          progress: { 
+            current: progress.current, 
+            total: progress.total 
+          }
+        });
+      });
       
       console.log('Bulk delete response:', response);
       
+      // Remove progress notification
+      removeNotification(notificationId);
+      
+      // Show result notification
       if (response.failureCount > 0) {
         const failedItems = response.results.filter(r => !r.success);
-        const errorMessages = failedItems.map(item => item.error).join(', ');
-        alert(`${response.successCount} item(s) deleted successfully. ${response.failureCount} item(s) failed: ${errorMessages}`);
+        const errorMessages = failedItems.slice(0, 3).map(item => item.error).join(', ');
+        const moreErrors = failedItems.length > 3 ? ` and ${failedItems.length - 3} more...` : '';
+        
+        showWarning(
+          'Partial deletion completed',
+          `${response.successCount} item(s) deleted successfully. ${response.failureCount} item(s) failed: ${errorMessages}${moreErrors}`,
+          { duration: 10000 }
+        );
       } else {
-        console.log(`Successfully deleted ${response.successCount} item(s)`);
+        showSuccess(
+          'Deletion completed',
+          `Successfully deleted ${response.successCount} item(s).`
+        );
       }
       
       // Clear selection
@@ -315,7 +462,11 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error('Bulk delete error:', error);
-      alert('Failed to delete items. Please try again.');
+      removeNotification(notificationId);
+      showError(
+        'Bulk deletion failed',
+        'Failed to delete items. Please try again.'
+      );
       // Clear selection even on error to prevent stuck state
       setSelectedFiles([]);
     }
@@ -340,7 +491,10 @@ const Dashboard = () => {
       localStorage.removeItem('user');
       
       // Show success message
-      alert('Account and all data deleted successfully. You will be redirected to the registration page.');
+      showSuccess(
+        'Account deleted',
+        'Account and all data deleted successfully. You will be redirected to the registration page.'
+      );
       
       // Redirect to register page
       navigate('/register');
@@ -360,7 +514,7 @@ const Dashboard = () => {
         errorMessage = 'No internet connection. Please check your connection and try again.';
       }
       
-      alert(errorMessage);
+      showError('Account deletion failed', errorMessage);
       
       // If it's an auth error, redirect to login
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -385,7 +539,7 @@ const Dashboard = () => {
 
   const createFolder = async () => {
     if (!newFolderName.trim()) {
-      alert('Please enter a folder name');
+      showWarning('Invalid name', 'Please enter a folder name');
       return;
     }
 
@@ -394,9 +548,13 @@ const Dashboard = () => {
       setFiles(prev => [response.folder, ...prev]);
       setNewFolderName('');
       setShowCreateFolder(false);
+      showSuccess('Folder created', `"${newFolderName.trim()}" has been created successfully.`);
     } catch (error) {
       console.error('Create folder error:', error);
-      alert(error.response?.data?.error || 'Failed to create folder');
+      showError(
+        'Folder creation failed',
+        error.response?.data?.error || 'Failed to create folder'
+      );
     }
   };
 
@@ -627,7 +785,13 @@ const Dashboard = () => {
           {currentView === 'storage' ? (
             <Storage />
           ) : currentView === 'billing' ? (
-            <DashboardBilling />
+            <div>
+              <DashboardBilling />
+              <div style={{ marginTop: '20px', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+                <h3>Notification System Test</h3>
+                <NotificationTest />
+              </div>
+            </div>
           ) : currentView === 'shared' ? (
             <div className="shared-files-view">
               <div className="files-header">
