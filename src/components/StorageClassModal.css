@@ -5,8 +5,8 @@
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--border-light);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .storage-modal .modal-header {
@@ -167,8 +167,10 @@
 }
 
 .storage-size-option:hover {
-  border-color: var(--primary);
+  border-color: rgba(254, 119, 67, 0.4);
   background: var(--bg-secondary);
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.2);
 }
 
 .storage-size-option.selected {
@@ -316,10 +318,10 @@
 }
 
 .storage-class-option:hover {
-  border-color: var(--primary);
+  border-color: rgba(254, 119, 67, 0.4);
   background: var(--bg-secondary);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(254, 119, 67, 0.2);
 }
 
 .storage-class-option.selected {

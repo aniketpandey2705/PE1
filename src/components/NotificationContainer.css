@@ -15,7 +15,8 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   padding: 16px;
   pointer-events: auto;
@@ -26,8 +27,8 @@
 }
 
 .notification:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 40px rgba(254, 119, 67, 0.2);
 }
 
 .notification-success {
@@ -127,6 +128,9 @@
 .notification-close:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+  transform: scale(1.1) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 .notification-progress {
@@ -179,6 +183,8 @@
 
 .notification-action.primary:hover {
   background: var(--primary-hover);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.3);
 }
 
 .notification-action.secondary {
@@ -189,6 +195,8 @@
 
 .notification-action.secondary:hover {
   background: var(--bg-hover);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
 .notification-action.danger {
@@ -198,6 +206,8 @@
 
 .notification-action.danger:hover {
   background: #dc2626;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
 }
 
 .spinning {

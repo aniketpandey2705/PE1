@@ -16,10 +16,9 @@
 }
 
 [data-theme="dark"] .storage-page {
-  background: linear-gradient(135deg, 
-    #000000 0%, 
-    #0B192C 30%, 
-    #1E3E62 70%, 
+  background: linear-gradient(135deg,
+    #000000 0%,
+    rgba(254, 119, 67, 0.3) 50%,
     #000000 100%);
 }
 
@@ -72,6 +71,9 @@
 .nav-item:hover {
   background: var(--hover-color);
   color: var(--text-primary);
+  transform: translateX(4px) scale(1.02);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 .nav-item.active {
@@ -144,8 +146,9 @@
 
 .back-btn:hover {
   background: var(--hover-color);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.2);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .page-title {
@@ -232,6 +235,9 @@
 
 .view-btn:hover:not(.active) {
   background: var(--hover-color);
+  transform: scale(1.05) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 .theme-toggle {
@@ -246,6 +252,9 @@
 
 .theme-toggle:hover {
   background: var(--hover-color);
+  transform: scale(1.1) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 /* Storage Overview */
@@ -286,8 +295,9 @@
 }
 
 .overview-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 60px rgba(254, 119, 67, 0.3);
+  border: 1px solid rgba(254, 119, 67, 0.4);
 }
 
 .overview-card:hover::before {
@@ -455,8 +465,9 @@
 }
 
 .breakdown-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(254, 119, 67, 0.2);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .breakdown-header {
@@ -546,7 +557,8 @@
 
 .view-files-btn:hover {
   background: var(--primary-dark);
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.3);
 }
 
 /* Files Section */
@@ -647,7 +659,8 @@
 .storage-class-filter:focus,
 .sort-by:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(45, 130, 215, 0.1);
+  box-shadow: 0 0 0 3px rgba(254, 119, 67, 0.2);
+  transform: translateY(-1px);
 }
 
 .sort-order-btn {
@@ -663,6 +676,9 @@
 
 .sort-order-btn:hover {
   background: var(--hover-color);
+  transform: scale(1.05) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 /* View Mode Toggle */
@@ -1335,8 +1351,9 @@
 
 .bulk-action-btn:hover {
   background: var(--hover-color);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.2);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .bulk-action-btn.intelligent-tiering-btn {

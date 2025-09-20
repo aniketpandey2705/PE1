@@ -16,8 +16,7 @@
 [data-theme="dark"] .landing-page {
   background: linear-gradient(135deg,
       #000000 0%,
-      #0B192C 30%,
-      #1E3E62 70%,
+      #FE7743 50%,
       #000000 100%) !important;
 }
 
@@ -37,17 +36,24 @@ section[id] {
   max-width: 1200px;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(40px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--modern-radius-minimal);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1), var(--shadow-glass);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: slideDownFade 0.6s ease-out;
 }
 
+.modern-navbar:hover {
+  border: 1px solid rgba(254, 119, 67, 0.4);
+  box-shadow: 0 8px 32px rgba(254, 119, 67, 0.2), var(--shadow-glass);
+  transform: translateX(-50%) translateY(-2px);
+}
+
 [data-theme="dark"] .modern-navbar {
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(40px);
-  border: 1px solid rgba(30, 62, 98, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 8px 32px rgba(0, 0, 0, 0.6);
 }
 
@@ -124,7 +130,7 @@ section[id] {
   align-items: center;
   justify-content: center;
   padding: 8px 16px;
-  border-radius: var(--modern-radius-sharp);
+  border-radius: 2px;
   font-weight: 600;
   font-size: 14px;
   text-decoration: none;
@@ -226,8 +232,8 @@ section[id] {
 
 [data-theme="dark"] .modern-hero::before {
   background: linear-gradient(135deg,
-      rgba(255, 101, 0, 0.1) 0%,
-      rgba(30, 62, 98, 0.05) 100%);
+      rgba(254, 119, 67, 0.1) 0%,
+      rgba(0, 0, 0, 0.05) 100%);
 }
 
 .hero-container {
@@ -320,7 +326,7 @@ section[id] {
   padding: 16px 32px;
   background: linear-gradient(135deg, var(--accent), #FF6B35);
   color: var(--text-inverse);
-  border-radius: var(--modern-radius-sharp);
+  border-radius: 2px;
   font-weight: 600;
   font-size: 16px;
   text-decoration: none;
@@ -373,7 +379,7 @@ section[id] {
   background: transparent;
   color: var(--text-primary);
   border: 2px solid var(--border-light);
-  border-radius: var(--modern-radius-sharp);
+  border-radius: 2px;
   font-weight: 600;
   font-size: 16px;
   cursor: pointer;
@@ -440,7 +446,7 @@ section[id] {
   padding: 24px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-light);
-  border-radius: var(--modern-radius-sharp);
+  border-radius: 2px;
   box-shadow: var(--modern-shadow-sharp);
   font-size: 14px;
   font-weight: 600;
@@ -452,6 +458,7 @@ section[id] {
 .visual-card:hover {
   transform: translateY(-6px) scale(1.02);
   box-shadow: var(--modern-shadow-elevated);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .visual-card:active {
@@ -727,6 +734,7 @@ section[id] {
 .solution-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: var(--modern-shadow-elevated);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .solution-card:active {
@@ -918,6 +926,7 @@ section[id] {
 .tier-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: var(--modern-shadow-elevated);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .tier-card:active {
@@ -1024,10 +1033,17 @@ section[id] {
 
 .automation-highlight {
   background: var(--bg-elevated);
-  border: 1px solid var(--border-light);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--modern-radius-sharp);
   padding: 32px;
-  box-shadow: var(--modern-shadow-sharp);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.automation-highlight:hover {
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 12px 40px rgba(254, 119, 67, 0.2);
+  transform: translateY(-4px);
 }
 
 .automation-content {
@@ -1120,6 +1136,7 @@ section[id] {
 .feature-item:hover {
   transform: translateY(-6px) scale(1.02);
   box-shadow: var(--modern-shadow-elevated);
+  border: 1px solid rgba(254, 119, 67, 0.3);
 }
 
 .feature-item:active {
@@ -1213,8 +1230,8 @@ section[id] {
   align-items: center;
   gap: 8px;
   padding: 20px 40px;
-  background: #FFFFFF;
-  color: #FF971D;
+  background: #000000;
+  color: #FFFFFF;
   border-radius: var(--modern-radius-sharp);
   font-weight: 700;
   font-size: 18px;
@@ -1224,8 +1241,8 @@ section[id] {
 }
 
 [data-theme="dark"] .cta-button-primary {
-  background: #FFFFFF;
-  color: #FF6500;
+  background: #000000;
+  color: #FFFFFF;
 }
 
 .cta-button-primary:hover {

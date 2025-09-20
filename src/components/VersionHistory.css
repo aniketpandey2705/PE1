@@ -20,8 +20,8 @@
   max-width: 800px;
   max-height: 90vh;
   overflow: hidden;
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border-light);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .version-history-header {
@@ -208,24 +208,33 @@
 .action-btn:hover {
   background: var(--bg-tertiary);
   color: var(--text-primary);
+  transform: scale(1.1) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 .restore-btn:hover {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
+  transform: scale(1.15) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.3);
 }
 
 .delete-btn:hover {
   background: var(--error);
   color: white;
   border-color: var(--error);
+  transform: scale(1.15) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
 }
 
 .download-btn:hover {
   background: var(--accent);
   color: white;
   border-color: var(--accent);
+  transform: scale(1.15) translateY(-2px);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.3);
 }
 
 .version-comment {

@@ -22,7 +22,8 @@
   box-shadow: 0 25px 35px rgba(0, 0, 0, 0.2);
   overflow: hidden;
   position: relative;
-  border: 1px solid color-mix(in srgb, var(--bg-elevated) 90%, var(--primary) 10%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
   animation: slideDown 0.3s ease forwards;
 }
 
@@ -57,6 +58,9 @@
 .close-button:hover {
   background: var(--hover-color);
   color: var(--text-primary);
+  transform: scale(1.1) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 .modal-content {
@@ -266,6 +270,9 @@
 
 .copy-button:hover {
   background: var(--hover-color);
+  transform: scale(1.1) translateY(-1px);
+  border: 1px solid rgba(254, 119, 67, 0.3);
+  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.2);
 }
 
 .expiry-note {
@@ -289,6 +296,8 @@
 
 .generate-button:hover {
   background: var(--primary-hover);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(254, 119, 67, 0.3);
 }
 
 .generate-button:disabled {
@@ -323,6 +332,8 @@
 
 .remove-button:hover {
   background: #dc2626;
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
 }
 
 .remove-button:disabled {
