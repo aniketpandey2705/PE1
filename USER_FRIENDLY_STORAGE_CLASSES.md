@@ -6,6 +6,23 @@ SkyCrate transforms complex AWS S3 storage classes into simple, intuitive choice
 
 ## 🚀 The SkyCrate Storage Classes
 
+### 🤖 Intelligent Tiering Storage
+**AWS Name:** `INTELLIGENT_TIERING`
+**Base Cost:** $0.0125/GB/month
+**SkyCrate Price:** $0.016/GB/month (30% service margin)
+**Perfect For:** Files with unpredictable access patterns
+
+**What it's for:**
+- Files with changing access patterns
+- Data you want AWS to optimize automatically
+- Mixed workloads where you don't know future usage
+- "Set it and forget it" storage
+
+**Why choose this:**
+"🤖 AWS automatically optimizes costs based on how often you access your files. No manual decisions needed!"
+
+---
+
 ### ⚡ Lightning Fast Storage
 **AWS Name:** `STANDARD`  
 **Base Cost:** $0.023/GB/month  
@@ -111,6 +128,7 @@ SkyCrate transforms complex AWS S3 storage classes into simple, intuitive choice
 SkyCrate uses a smart tiered margin system that reflects the value provided for each storage class:
 
 ### Margin Structure
+- **Intelligent Tiering (30% margin)** - Automated optimization service
 - **Lightning Fast (25% margin)** - Premium convenience pricing for instant access
 - **Smart Saver (35% margin)** - Value pricing for intelligent optimization
 - **Budget Smart (40% margin)** - Competitive pricing for budget-conscious users
@@ -125,14 +143,17 @@ SkyCrate uses a smart tiered margin system that reflects the value provided for 
 4. **Service differentiation** - Higher margins fund better AI recommendations and support
 
 ### Revenue Optimization
+SkyCrate uses **variable margins** based on the value provided by each storage class:
+
 ```
-Example: 100GB mixed storage
-- Lightning Fast (20GB): $0.58/month → SkyCrate: $0.73/month
-- Smart Saver (30GB): $0.38/month → SkyCrate: $0.51/month  
-- Archive Pro (50GB): $0.20/month → SkyCrate: $0.29/month
-Total AWS Cost: $1.16/month
-Total SkyCrate Revenue: $1.53/month
-Profit Margin: $0.37/month (32% overall)
+Example: 100GB mixed storage with variable margins
+- Intelligent Tiering (10GB): $0.13/month → SkyCrate: $0.17/month (30% margin)
+- Lightning Fast (20GB): $0.46/month → SkyCrate: $0.58/month (25% margin)
+- Smart Saver (30GB): $0.38/month → SkyCrate: $0.51/month (35% margin)
+- Archive Pro (40GB): $0.16/month → SkyCrate: $0.23/month (45% margin)
+Total AWS Cost: $1.13/month
+Total SkyCrate Revenue: $1.49/month
+Profit Margin: $0.36/month (32% weighted average)
 ```
 
 ## 🤖 Automatic Smart Recommendations

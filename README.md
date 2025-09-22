@@ -21,8 +21,15 @@ A modern cloud storage platform with **Pay-As-You-Go billing** built with React,
 - 30% margin over AWS costs for platform sustainability
 
 ### Pricing Structure
-- **Storage**: $0.030/GB (Standard), $0.023/GB (IA), $0.008/GB (Archive)
-- **Requests**: $0.065/1K uploads, $0.005/1K downloads  
+- **Storage**:
+  - Intelligent Tiering: $0.016/GB/month (AWS Intelligent Tiering)
+  - Lightning Fast: $0.029/GB/month (Standard)
+  - Smart Saver: $0.017/GB/month (Standard-IA)
+  - Budget Smart: $0.014/GB/month (OneZone-IA)
+  - Archive Pro: $0.006/GB/month (Glacier Instant)
+  - Deep Freeze: $0.005/GB/month (Glacier)
+  - Vault Keeper: $0.002/GB/month (Deep Archive)
+- **Requests**: $0.065/1K uploads, $0.005/1K downloads
 - **Data Transfer**: $0.13/GB (first 10GB free monthly)
 - **Archive Retrieval**: $0.052/GB (Flexible), $0.039/GB (Deep)
 

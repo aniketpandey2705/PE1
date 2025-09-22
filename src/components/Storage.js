@@ -419,6 +419,53 @@ const Storage = () => {
             )}
           </button>
         </nav>
+
+        {/* Storage Overview Cards in Sidebar */}
+        <div className="sidebar-overview">
+          <div className="overview-card total-storage">
+            <div className="card-icon storage-icon">
+              <FiHardDrive />
+            </div>
+            <div className="card-content">
+              <h3>Total Storage</h3>
+              <div className="card-value">{formatFileSize(storageStats.usedStorage)}</div>
+              <div className="card-subtitle">Used space of {formatFileSize(storageStats.totalStorage)}</div>
+            </div>
+          </div>
+
+          <div className="overview-card total-files">
+            <div className="card-icon">
+              <FiFile />
+            </div>
+            <div className="card-content">
+              <h3>Total Files</h3>
+              <div className="card-value">{files?.length || 0}</div>
+              <div className="card-subtitle">Files stored</div>
+            </div>
+          </div>
+
+          <div className="overview-card monthly-cost">
+            <div className="card-icon">
+              <FiDollarSign />
+            </div>
+            <div className="card-content">
+              <h3>Monthly Cost</h3>
+              <div className="card-value">${totalMonthlyCost.toFixed(2)}</div>
+              <div className="card-subtitle">Estimated monthly storage cost</div>
+            </div>
+          </div>
+
+          <div className="overview-card storage-classes">
+            <div className="card-icon">
+              <FiPieChart />
+            </div>
+            <div className="card-content">
+              <h3>Storage Classes</h3>
+              <div className="card-value">{Object.keys(storageClassBreakdown).length}</div>
+              <div className="card-subtitle">Active storage classes</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="storage-main">
@@ -433,95 +480,51 @@ const Storage = () => {
         <div className="storage-error">{error}</div>
       ) : (
         <div className="storage-content">
-          <div className="storage-overview">
-            <div className="overview-card total-storage">
-              <div className="card-icon storage-icon">
-                <FiHardDrive />
-              </div>
-              <div className="card-content">
-                <h3>Total Storage</h3>
-                <div className="card-value">{formatFileSize(storageStats.usedStorage)}</div>
-                <div className="card-subtitle">Used space of {formatFileSize(storageStats.totalStorage)}</div>
-              </div>
-            </div>
-
-            <div className="overview-card total-files">
-              <div className="card-icon">
-                <FiFile />
-              </div>
-              <div className="card-content">
-                <h3>Total Files</h3>
-                <div className="card-value">{files?.length || 0}</div>
-                <div className="card-subtitle">Files stored</div>
-              </div>
-            </div>
-
-            <div className="overview-card monthly-cost">
-              <div className="card-icon">
-                <FiDollarSign />
-              </div>
-              <div className="card-content">
-                <h3>Monthly Cost</h3>
-                <div className="card-value">${totalMonthlyCost.toFixed(2)}</div>
-                <div className="card-subtitle">Estimated monthly storage cost</div>
-              </div>
-            </div>
-
-            <div className="overview-card storage-classes">
-              <div className="card-icon">
-                <FiPieChart />
-              </div>
-              <div className="card-content">
-                <h3>Storage Classes</h3>
-                <div className="card-value">{Object.keys(storageClassBreakdown).length}</div>
-                <div className="card-subtitle">Active storage classes</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Storage Class Breakdown */}
-          <div className="storage-breakdown">
-            <h2>Storage Class Breakdown</h2>
-            <div className="breakdown-grid">
-              {Object.entries(storageClassBreakdown).map(([storageClass, data]) => {
-                const classInfo = getStorageClassInfo(storageClass);
-                return (
-                  <div key={storageClass} className="breakdown-card">
-                    <div className="breakdown-header">
-                      <div className="storage-class-icon" style={{ color: classInfo.color }}>
-                        {classInfo.icon}
+          {/* Storage Class Breakdown - Only show if there are storage classes */}
+          {Object.keys(storageClassBreakdown).length > 0 && (
+            <div className="storage-breakdown">
+              <h2>Storage Class Breakdown</h2>
+              <div className="breakdown-grid">
+                {Object.entries(storageClassBreakdown).map(([storageClass, data]) => {
+                  const classInfo = getStorageClassInfo(storageClass);
+                  return (
+                    <div key={storageClass} className="breakdown-card">
+                      <div className="breakdown-header">
+                        <div className="storage-class-icon" style={{ color: classInfo.color }}>
+                          {classInfo.icon}
+                        </div>
+                        <div className="storage-class-info">
+                          <h3>{classInfo.name}</h3>
+                          <p>{classInfo.description}</p>
+                          <span className="cost-info">{classInfo.cost}</span>
+                        </div>
                       </div>
-                      <div className="storage-class-info">
-                        <h3>{classInfo.name}</h3>
-                        <p>{classInfo.description}</p>
-                        <span className="cost-info">{classInfo.cost}</span>
+                      <div className="breakdown-stats">
+                        <div className="stat">
+                          <span className="stat-label">Files:</span>
+                          <span className="stat-value">{data.count}</span>
+                        </div>
+                        <div className="stat">
+                          <span className="stat-label">Size:</span>
+                          <span className="stat-value">{formatFileSize(data.totalSize)}</span>
+                        </div>
+                        <div className="stat">
+                          <span className="stat-label">Monthly Cost:</span>
+                          <span className="stat-value">${data.totalCost.toFixed(2)}</span>
+                        </div>
                       </div>
+                      <button
+                        className="view-files-btn"
+                        onClick={() => setSelectedStorageClass(storageClass)}
+                      >
+                        View Files
+                      </button>
                     </div>
-                    <div className="breakdown-stats">
-                      <div className="stat">
-                        <span className="stat-label">Files:</span>
-                        <span className="stat-value">{data.count}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Size:</span>
-                        <span className="stat-value">{formatFileSize(data.totalSize)}</span>
-                      </div>
-                      <div className="stat">
-                        <span className="stat-label">Monthly Cost:</span>
-                        <span className="stat-value">${data.totalCost.toFixed(2)}</span>
-                      </div>
-                    </div>
-                    <button
-                      className="view-files-btn"
-                      onClick={() => setSelectedStorageClass(storageClass)}
-                    >
-                      View Files
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Files Section */}
           <div className="files-section">

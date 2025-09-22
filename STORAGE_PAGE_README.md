@@ -36,12 +36,13 @@ Each storage class shows:
   - Action buttons (star, download, share)
 
 ### 4. Storage Classes Available
-- **STANDARD**: $0.023/GB/month - Frequently accessed files
-- **STANDARD_IA**: $0.0125/GB/month - Infrequently accessed files
-- **ONEZONE_IA**: $0.01/GB/month - Non-critical, infrequent access
-- **GLACIER_IR**: $0.004/GB/month - Archive with instant retrieval
-- **GLACIER**: $0.0036/GB/month - Long-term archive
-- **DEEP_ARCHIVE**: $0.00099/GB/month - Long-term backup
+- **INTELLIGENT_TIERING**: $0.016/GB/month - Automatic optimization based on access patterns
+- **STANDARD**: $0.029/GB/month - Frequently accessed files
+- **STANDARD_IA**: $0.017/GB/month - Infrequently accessed files
+- **ONEZONE_IA**: $0.014/GB/month - Non-critical, infrequent access
+- **GLACIER_IR**: $0.006/GB/month - Archive with instant retrieval
+- **GLACIER**: $0.005/GB/month - Long-term archive
+- **DEEP_ARCHIVE**: $0.002/GB/month - Long-term backup
 
 ## How to Access
 

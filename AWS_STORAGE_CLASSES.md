@@ -13,12 +13,36 @@ When users upload files, SkyCrate automatically selects the most cost-effective 
 
 | Storage Class | Cost/GB/Month | Best For | Retrieval Time |
 |---------------|---------------|----------|----------------|
+| **INTELLIGENT_TIERING** | $0.0125 | Automatic optimization | Immediate |
 | **STANDARD** | $0.023 | Frequently accessed files | Immediate |
 | **STANDARD_IA** | $0.0125 | Large, infrequently accessed files | Immediate |
 | **ONEZONE_IA** | $0.01 | Non-critical, infrequent access | Immediate |
 | **GLACIER_IR** | $0.004 | Archive with instant retrieval | Immediate |
 | **GLACIER** | $0.0036 | Long-term archive | 1-5 minutes |
 | **DEEP_ARCHIVE** | $0.00099 | Long-term backup | 12 hours |
+
+## 🤖 Intelligent Tiering Storage Class
+
+### What is Intelligent Tiering?
+**INTELLIGENT_TIERING** is AWS's most advanced storage class that automatically optimizes costs by moving your files between different access tiers based on changing access patterns. No manual intervention required!
+
+### How It Works
+- **Frequent Access**: Files accessed regularly stay in the Frequent Access tier (same cost as Standard)
+- **Infrequent Access**: Files not accessed for 30+ days move to Infrequent Access tier (same cost as Standard-IA)
+- **Archive Instant**: Files not accessed for 90+ days move to Archive Instant tier (same cost as Glacier Instant Retrieval)
+- **Archive Access**: Files not accessed for 1+ year move to Archive Access tier (same cost as Glacier)
+- **Deep Archive**: Files not accessed for 2+ years move to Deep Archive Access tier (same cost as Deep Archive)
+
+### Benefits
+- **Automatic Optimization**: AWS handles all tier movements based on your actual usage patterns
+- **No Retrieval Fees**: Unlike other storage classes, Intelligent Tiering has no retrieval fees
+- **Monitoring Fees**: Small monthly monitoring fee ($0.0025/1,000 objects) for the automation
+- **Cost Effective**: Automatically saves money for files with unpredictable access patterns
+
+### SkyCrate Integration
+- **30% Service Margin**: We add value through simplified interface and support
+- **SkyCrate Price**: $0.01625/GB/month ($0.0125 base + 30% margin)
+- **Automatic Selection**: Recommended for users who want "set it and forget it" storage
 
 ## 🤖 Automatic Optimization Logic
 

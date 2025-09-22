@@ -59,7 +59,7 @@
 [data-theme='light'] body,
 [data-theme='light'] #root {
   /* Modern Color Mappings */
-  --primary: #FFFFFF;
+  --primary: #FE7743;
   --primary-light: #F9F6F7;
   --primary-dark: #FFE8D6;
   --accent: #FF971D;
