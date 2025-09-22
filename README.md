@@ -218,4 +218,4 @@ MIT License - see LICENSE file for details
 
 ---
 
-**SkyCrate** - Simple cloud storage with transparent billing and cost optimization🚀
+**SkyCrate** - Simple cloud storage with transparent billing 🚀
