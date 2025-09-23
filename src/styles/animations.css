@@ -11,10 +11,12 @@
   --anim-page: 400ms;
   
   /* Easing Functions */
-  --ease-entrance: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-entrance: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-gentle: cubic-bezier(0.4, 0, 0.2, 1);
   
   /* Scroll Animation Settings */
   --scroll-offset: 50px;
@@ -86,8 +88,8 @@
 .animate-on-scroll {
   opacity: 1; /* Default to visible */
   transform: translateY(0); /* Default to normal position */
-  transition: opacity var(--anim-normal) var(--ease-entrance),
-              transform var(--anim-normal) var(--ease-entrance);
+  transition: opacity var(--anim-normal) var(--ease-spring),
+              transform var(--anim-normal) var(--ease-spring);
 }
 
 /* Only animate when intersection observer is active */
@@ -105,8 +107,8 @@
 .animate-on-scroll-fade-up {
   opacity: 1; /* Default to visible */
   transform: translateY(0); /* Default to normal position */
-  transition: opacity var(--animation-duration, var(--anim-normal)) var(--animation-easing, var(--ease-entrance)),
-              transform var(--animation-duration, var(--anim-normal)) var(--animation-easing, var(--ease-entrance));
+  transition: opacity var(--animation-duration, var(--anim-normal)) var(--ease-spring),
+              transform var(--animation-duration, var(--anim-normal)) var(--ease-spring);
 }
 
 .animate-on-scroll-fade-up:not(.visible) {
@@ -420,8 +422,8 @@
 .hero-section-reveal {
   opacity: 1; /* Default to visible */
   transform: translateY(0) scale(1); /* Default to normal position and scale */
-  transition: opacity 600ms var(--ease-entrance),
-              transform 600ms var(--ease-entrance);
+  transition: opacity 600ms var(--ease-spring),
+              transform 600ms var(--ease-spring);
 }
 
 .hero-section-reveal:not(.visible) {
@@ -438,8 +440,8 @@
 .section-reveal {
   opacity: 1; /* Default to visible */
   transform: translateY(0); /* Default to normal position */
-  transition: opacity var(--anim-slow) var(--ease-entrance),
-              transform var(--anim-slow) var(--ease-entrance);
+  transition: opacity var(--anim-slow) var(--ease-spring),
+              transform var(--anim-slow) var(--ease-spring);
 }
 
 .section-reveal:not(.visible) {
@@ -1288,11 +1290,126 @@ d Landing Page Animations */
   .hero-visual {
     animation: none;
   }
-  
+
   .card-smooth-reveal,
   .text-reveal {
     transition: none;
     opacity: 1;
     transform: none;
   }
+}
+
+/* Additional smooth animation enhancements */
+.smooth-float {
+  animation: gentleFloat 6s ease-in-out infinite;
+}
+
+.smooth-pulse {
+  animation: subtlePulse 4s ease-in-out infinite;
+}
+
+.smooth-glow {
+  animation: pulse-glow 3s ease-in-out infinite alternate;
+}
+
+.smooth-bounce-in {
+  animation: scaleInBounce 0.8s var(--ease-spring);
+}
+
+.smooth-slide-in-left {
+  animation: slideInFromLeft 0.8s var(--ease-spring);
+}
+
+.smooth-slide-in-right {
+  animation: slideInFromRight 0.8s var(--ease-spring);
+}
+
+.smooth-fade-in-up {
+  animation: fadeInUp 0.8s var(--ease-spring);
+}
+
+.smooth-scale-in {
+  animation: smoothScaleIn 0.6s var(--ease-spring);
+}
+
+/* Enhanced stagger animations with smoother timing */
+.stagger-smooth > * {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: smoothStaggerReveal 0.8s var(--ease-spring) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 150ms);
+}
+
+/* New keyframes for enhanced smoothness */
+@keyframes smoothStaggerReveal {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes enhancedFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-5px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-5px) rotate(-0.5deg);
+  }
+}
+
+@keyframes smoothParallax {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes enhancedFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(0.5deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-8px) rotate(-0.5deg);
+  }
+}
+
+/* Apply smooth animations to landing page elements */
+.landing-page .solution-card {
+  transition: all 0.4s var(--ease-spring);
+}
+
+.landing-page .feature-item {
+  transition: all 0.4s var(--ease-spring);
+}
+
+.landing-page .tier-card {
+  transition: all 0.4s var(--ease-spring);
+}
+
+/* Enhanced interactive elements */
+.interactive-smooth {
+  transition: all 0.3s var(--ease-spring);
+}
+
+.interactive-smooth:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }

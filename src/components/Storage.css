@@ -323,7 +323,7 @@
   left: 0;
   right: 0;
   height: 6px;
-  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   opacity: 0;
   transition: all 0.3s ease;
   border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
@@ -370,6 +370,7 @@
   flex-shrink: 0;
 }
 
+
 .card-content {
   flex: 1;
 }
@@ -395,19 +396,19 @@
 }
 
 .total-storage .card-icon {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
 }
 
 .total-files .card-icon {
-  background: linear-gradient(135deg, var(--accent), #059669);
+  background: var(--accent);
 }
 
 .monthly-cost .card-icon {
-  background: linear-gradient(135deg, var(--warning), #d97706);
+  background: var(--warning);
 }
 
 .storage-classes .card-icon {
-  background: linear-gradient(135deg, var(--secondary), #7c3aed);
+  background: #7c3aed;
 }
 
 /* Storage Breakdown */
@@ -561,6 +562,7 @@
   background: rgba(45, 130, 215, 0.1);
   color: var(--primary);
 }
+
 
 .storage-class-info h3 {
   margin: 0 0 0.5rem 0;
@@ -915,7 +917,7 @@
   right: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+  background: var(--primary);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -947,6 +949,7 @@
   flex-shrink: 0;
   box-shadow: var(--shadow-sm);
 }
+
 
 .file-info {
   flex: 1;
@@ -1510,7 +1513,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary), #7C3AED);
+  background: var(--primary);
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
 }

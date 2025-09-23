@@ -90,22 +90,7 @@ const Login = () => {
       <button 
         onClick={() => navigate('/')} 
         className="back-button animate-on-scroll-slide-left"
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          padding: '8px 16px',
-          background: 'rgba(255, 255, 255, 0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '4px',
-          color: 'white',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          transition: 'all 0.2s ease',
-          zIndex: 1
-        }}>
+      >
         ← Back
       </button>
       {loading && <LoadingScreen message="Preparing your SkyCrate..." />}

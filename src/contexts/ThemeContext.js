@@ -11,34 +11,21 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    // Check localStorage for saved theme preference
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      return savedTheme;
-    }
-    // Check system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  });
+  const [theme] = useState('dark');
 
   useEffect(() => {
-    // Update document data attribute
-    document.documentElement.setAttribute('data-theme', theme);
-    // Save to localStorage
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    // Always set to dark theme
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
 
   const toggleTheme = () => {
-    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    // Do nothing - theme is always dark
   };
 
   const value = {
     theme,
     toggleTheme,
-    isDark: theme === 'dark'
+    isDark: true
   };
 
   return (
