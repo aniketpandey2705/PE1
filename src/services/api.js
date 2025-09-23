@@ -148,22 +148,30 @@ export const fileAPI = {
   },
 
   // Bulk delete with progress tracking
-  bulkDeleteWithProgress: async (fileIds, onProgress) => {
+  bulkDeleteWithProgress: async (items, onProgress) => {
     const results = [];
     let successCount = 0;
     let failureCount = 0;
 
-    for (let i = 0; i < fileIds.length; i++) {
-      const fileId = fileIds[i];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const itemId = typeof item === 'string' ? item : item.id;
+      const isFolder = typeof item === 'object' && item.isFolder;
+      
       try {
-        await api.delete(`/files/${fileId}`);
-        results.push({ fileId, success: true });
+        if (isFolder) {
+          await api.delete(`/folders/${itemId}`);
+        } else {
+          await api.delete(`/files/${itemId}`);
+        }
+        results.push({ itemId, success: true, isFolder });
         successCount++;
       } catch (error) {
         results.push({ 
-          fileId, 
+          itemId, 
           success: false, 
-          error: error.response?.data?.error || error.message 
+          error: error.response?.data?.error || error.message,
+          isFolder
         });
         failureCount++;
       }
@@ -172,7 +180,7 @@ export const fileAPI = {
       if (onProgress) {
         onProgress({
           current: i + 1,
-          total: fileIds.length,
+          total: items.length,
           successCount,
           failureCount,
           results

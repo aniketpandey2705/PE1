@@ -265,7 +265,7 @@ section[id] {
   gap: 64px;
   align-items: center;
   min-height: calc(100vh - 120px);
-  padding: 0 var(--modern-container-padding) 0 calc(var(--modern-container-padding) + 1.5rem);
+  padding: 16px var(--modern-container-padding) 0 calc(var(--modern-container-padding) + 6.5rem);
   width: 100%;
 }
 

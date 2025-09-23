@@ -78,10 +78,9 @@
 .dashboard {
   display: flex;
   min-height: 100vh;
-  background: linear-gradient(135deg, 
-    color-mix(in srgb, var(--bg-secondary) 95%, var(--primary) 5%),
-    var(--bg-primary)
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--bg-secondary) 95%, var(--primary) 5%),
+      var(--bg-primary));
   position: relative;
 }
 
@@ -142,7 +141,7 @@
 }
 
 /* Adjust main content when sidebar is collapsed */
-.sidebar.collapsed + .main-content {
+.sidebar.collapsed+.main-content {
   margin-left: 72px;
 }
 
@@ -244,7 +243,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-4);
+  padding: var(--space-6) var(--space-6);
   margin-bottom: var(--space-2);
   color: var(--text-secondary);
   text-decoration: none;
@@ -328,14 +327,13 @@
 .user-avatar {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+
   color: var(--text-inverse);
-  border-radius: var(--radius-full);
+
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--text-lg);
-  box-shadow: 0 4px 12px rgba(254, 119, 67, 0.3);
 }
 
 .user-details {
@@ -857,7 +855,7 @@
   font-size: var(--text-2xl);
   font-weight: 700;
   color: var(--text-primary);
-  background: linear-gradient(135deg, var(--text-primary), var(--primary));
+  background:  var(--text-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1193,8 +1191,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Modal Styles */
@@ -1219,7 +1222,7 @@
   border-radius: 20px;
   overflow: hidden;
   background: var(--bg-elevated, #232b39);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
@@ -1341,6 +1344,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -1351,6 +1355,7 @@
     opacity: 0;
     transform: translateY(20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1560,12 +1565,12 @@
     padding: var(--space-3) var(--space-4);
     font-size: var(--text-sm);
   }
-  
+
   .btn-sm {
     padding: var(--space-2) var(--space-3);
     font-size: var(--text-xs);
   }
-  
+
   .btn-lg {
     padding: var(--space-4) var(--space-6);
     font-size: var(--text-base);
@@ -1577,15 +1582,15 @@
   .sidebar {
     transform: translateX(0);
   }
-  
+
   .main-content {
     margin-left: 280px;
   }
-  
+
   .menu-toggle {
     display: none;
   }
-  
+
   .sidebar-close {
     display: none;
   }
@@ -1595,15 +1600,15 @@
   .menu-toggle {
     display: block;
   }
-  
+
   .sidebar-close {
     display: block;
   }
-  
+
   .files-grid.grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
-  
+
   .content-area {
     padding: var(--space-6);
   }
@@ -1616,46 +1621,46 @@
     gap: var(--space-4);
     padding: var(--space-4);
   }
-  
+
   .header-left {
     flex-direction: row;
     gap: var(--space-3);
     align-items: center;
   }
-  
+
   .search-bar {
     max-width: none;
     flex: 1;
   }
-  
+
   .header-right {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: var(--space-3);
   }
-  
+
   .files-header {
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-4);
     padding: var(--space-6);
   }
-  
+
   .files-actions {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .files-grid.grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: var(--space-4);
   }
-  
+
   .files-grid.grid .file-item {
     min-height: 180px;
     padding: var(--space-6);
   }
-  
+
   .files-grid.list .file-item {
     flex-direction: row;
     align-items: center;
@@ -1663,29 +1668,29 @@
     padding: var(--space-4);
     min-height: 70px;
   }
-  
+
   .files-grid.list .file-checkbox {
     position: static;
   }
-  
+
   .files-grid.list .file-actions {
     position: static;
     opacity: 1;
     flex-direction: row;
   }
-  
+
   .upload-area {
     padding: var(--space-12);
   }
-  
+
   .upload-icon {
     font-size: 3rem;
   }
-  
+
   .content-area {
     padding: var(--space-4);
   }
-  
+
   .breadcrumb {
     flex-wrap: wrap;
     gap: var(--space-1);
@@ -1696,108 +1701,108 @@
   .dashboard-header {
     padding: var(--space-3);
   }
-  
+
   .header-left {
     flex-direction: column;
     gap: var(--space-2);
   }
-  
+
   .header-right {
     justify-content: center;
     gap: var(--space-2);
   }
-  
+
   .upload-area {
     padding: var(--space-8);
   }
-  
+
   .upload-icon {
     font-size: 2.5rem;
   }
-  
+
   .files-header {
     padding: var(--space-4);
   }
-  
+
   .files-grid {
     padding: var(--space-3);
   }
-  
+
   .files-grid.grid {
     grid-template-columns: 1fr;
     gap: var(--space-3);
   }
-  
+
   .files-grid.grid .file-item {
     min-height: 160px;
     padding: var(--space-4);
   }
-  
+
   .files-grid.grid .file-icon {
     width: 48px;
     height: 48px;
     font-size: var(--text-2xl);
   }
-  
+
   .files-grid.list .file-item {
     padding: var(--space-3);
     min-height: 60px;
     gap: var(--space-2);
   }
-  
+
   .files-grid.list .file-icon {
     width: 40px;
     height: 40px;
     font-size: var(--text-lg);
   }
-  
+
   .files-grid.list .file-name {
     font-size: var(--text-sm);
   }
-  
+
   .files-grid.list .file-meta {
     font-size: var(--text-xs);
   }
-  
+
   .action-btn,
   .star-btn {
     width: 32px;
     height: 32px;
     font-size: var(--text-sm);
   }
-  
+
   .modal-overlay {
     padding: var(--space-2);
   }
-  
+
   .modal {
     max-width: none;
   }
-  
+
   .modal-header,
   .modal-body,
   .modal-footer {
     padding: var(--space-4);
   }
-  
+
   .modal-footer {
     flex-direction: column;
   }
-  
+
   .breadcrumb {
     flex-wrap: wrap;
     padding: var(--space-3);
     gap: var(--space-1);
   }
-  
+
   .files-title h2 {
     font-size: var(--text-xl);
   }
-  
+
   .content-area {
     padding: var(--space-3);
   }
-  
+
   .sidebar {
     width: 100%;
   }
@@ -1961,6 +1966,7 @@
   font-weight: 500;
   font-size: var(--text-sm);
 }
+
 /* Version Badge Styles */
 .version-badge {
   display: inline-flex;

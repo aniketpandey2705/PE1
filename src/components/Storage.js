@@ -4,6 +4,7 @@ import ShareModal from './ShareModal';
 import {
   FiHardDrive,
   FiFile,
+  FiFolder,
   FiImage,
   FiVideo,
   FiMusic,
@@ -30,7 +31,7 @@ const Storage = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState('grid');
+  const [viewMode, setViewMode] = useState('list');
   const [activeSection, setActiveSection] = useState('all'); // 'all' or 'shared'
 
   // New: Add view mode toggle buttons handler
@@ -80,12 +81,25 @@ const Storage = () => {
     }
   };
 
-  const getFileIcon = (fileType) => {
+  const getFileIcon = (fileType, isFolder = false) => {
+    if (isFolder) return <FiFolder />;
     if (fileType.startsWith('image/')) return <FiImage />;
     if (fileType.startsWith('video/')) return <FiVideo />;
     if (fileType.startsWith('audio/')) return <FiMusic />;
     if (fileType.includes('zip') || fileType.includes('rar')) return <FiArchive />;
     return <FiFile />;
+  };
+
+  const getFileTypeDisplay = (fileType, isFolder = false) => {
+    if (isFolder) return 'FOLDER';
+    if (fileType.startsWith('image/')) return 'IMAGE';
+    if (fileType.startsWith('video/')) return 'VIDEO';
+    if (fileType.startsWith('audio/')) return 'AUDIO';
+    if (fileType.includes('zip') || fileType.includes('rar')) return 'ARCHIVE';
+    if (fileType.includes('pdf')) return 'PDF';
+    if (fileType.includes('word') || fileType.includes('document')) return 'DOCUMENT';
+    if (fileType.includes('sheet') || fileType.includes('excel')) return 'SPREADSHEET';
+    return 'FILE';
   };
 
   const formatFileSize = (bytes) => {
@@ -237,6 +251,13 @@ const Storage = () => {
   const handleBulkIntelligentTieringCancel = () => {
     setShowBulkIntelligentTieringModal(false);
     setBulkOperationProgress(null);
+  };
+
+  const openFolder = (folder) => {
+    // Navigate to folder view or handle folder opening logic
+    console.log('Opening folder:', folder.name);
+    // You can implement navigation logic here, for example:
+    // navigate(`/storage/folder/${folder.id}`);
   };
 
   const getEligibleFilesForIntelligentTiering = () => {
@@ -670,75 +691,65 @@ const Storage = () => {
                         />
                       </div>
                     )}
-                    <div className="file-icon">
-                      {getFileIcon(file.fileType)}
+                    <div className={`file-icon ${file.isFolder ? 'folder-icon' : ''}`}>
+                      {getFileIcon(file.fileType, file.isFolder)}
                     </div>
 
                     <div className="file-info">
-                      <div className="file-name">{file.originalName}</div>
-                      <div className="file-meta">
-                        <span className="file-size">{formatFileSize(file.fileSize)}</span>
-                        <span className="file-date">{formatDate(file.uploadDate)}</span>
-                      </div>
-                      <div className="storage-class-badge"
-                           style={{ backgroundColor: getStorageClassInfo(file.storageClass).color + '20',
-                                   color: getStorageClassInfo(file.storageClass).color }}
-                           title={file.storageClass === 'INTELLIGENT_TIERING' 
-                             ? "AWS automatically moves your files between storage tiers based on access patterns to optimize costs while maintaining instant access when needed."
-                             : getStorageClassInfo(file.storageClass).description}>
-                        {getStorageClassInfo(file.storageClass).name}
-                      </div>
-                      {file.estimatedMonthlyCost && (
-                        <div className="monthly-cost">
-                          ${file.estimatedMonthlyCost.toFixed(4)}/month
-                        </div>
-                      )}
-                      {file.storageClass === 'INTELLIGENT_TIERING' && file.savingsFromIntelligentTiering && (
-                        <div className="intelligent-tiering-savings">
-                          💰 Saving ${file.savingsFromIntelligentTiering.toFixed(2)}/month with intelligent optimization
-                        </div>
-                      )}
-                      {file.storageClass === 'INTELLIGENT_TIERING' && !file.savingsFromIntelligentTiering && (
-                        <div className="intelligent-tiering-info">
-                          🤖 Automatically optimizing costs based on access patterns
-                        </div>
-                      )}
+                      <div className="file-name">{file.isFolder ? file.name : file.originalName}</div>
                     </div>
 
-                    <div className="file-actions">
-                      <button
-                        className={`star-btn ${file.isStarred ? 'starred' : ''}`}
-                        aria-label={`${file.isStarred ? 'Unstar' : 'Star'} ${file.originalName}`}
-                        onClick={() => handleStarClick(file)}
-                      >
-                        <FiStar />
-                      </button>
-                      {file.storageClass !== 'INTELLIGENT_TIERING' && (
-                        <button
-                          className="action-btn intelligent-tiering-btn"
-                          onClick={() => handleIntelligentTieringClick(file)}
-                          aria-label={`Switch ${file.originalName} to Intelligent Tiering`}
-                          title="Switch to Intelligent Tiering"
-                        >
-                          <FiZap />
-                        </button>
+                    <div className="file-right-section">
+                      <div className="file-metadata">
+                        <div className="file-size">
+                          {file.isFolder ? '' : formatFileSize(file.fileSize)}
+                        </div>
+                        <div className="file-date">
+                          {formatDate(file.uploadDate || file.createdDate)}
+                        </div>
+                      </div>
+
+                      <div className="file-actions">
+                      {!file.isFolder && (
+                        <>
+                          <button
+                            className={`star-btn ${file.isStarred ? 'starred' : ''}`}
+                            aria-label={`${file.isStarred ? 'Unstar' : 'Star'} ${file.originalName}`}
+                            onClick={() => handleStarClick(file)}
+                          >
+                            <FiStar />
+                          </button>
+                          <button
+                            className="action-btn"
+                            onClick={() => handleDownload(file)}
+                            aria-label={`Download ${file.originalName}`}
+                            title="Download file"
+                          >
+                            <FiDownload />
+                          </button>
+                          <button
+                            className="action-btn"
+                            onClick={() => handleShareClick(file)}
+                            aria-label={`Share ${file.originalName}`}
+                            title="Share file"
+                          >
+                            <FiShare2 />
+                          </button>
+                        </>
                       )}
-                      <button
-                        className="action-btn"
-                        onClick={() => handleDownload(file)}
-                        aria-label={`Download ${file.originalName}`}
-                        title="Download file"
-                      >
-                        <FiDownload />
-                      </button>
-                      <button
-                        className="action-btn"
-                        onClick={() => handleShareClick(file)}
-                        aria-label={`Share ${file.originalName}`}
-                        title="Share file"
-                      >
-                        <FiShare2 />
-                      </button>
+                      {file.isFolder && (
+                        <>
+                          <button
+                            className="action-btn"
+                            onClick={() => openFolder(file)}
+                            aria-label={`Open ${file.name}`}
+                            title="Open folder"
+                          >
+                            <FiFolder />
+                          </button>
+                        </>
+                      )}
+                      </div>
                     </div>
                   </div>
                 ))}

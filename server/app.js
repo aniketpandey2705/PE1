@@ -25,6 +25,8 @@ const billingRoutes = require('./routes/billing');
 console.log('✅ Billing routes loaded');
 const versionRoutes = require('./routes/versions');
 console.log('✅ Version routes loaded');
+const folderRoutes = require('./routes/folders');
+console.log('✅ Folder routes loaded');
 
 const app = express();
 
@@ -88,6 +90,8 @@ app.use('/api/billing', billingRoutes);
 console.log('✅ /api/billing registered');
 app.use('/api/versions', versionRoutes);
 console.log('✅ /api/versions registered');
+app.use('/api/folders', folderRoutes);
+console.log('✅ /api/folders registered');
 
 // 404 handler
 app.use('/api/*', (req, res) => {

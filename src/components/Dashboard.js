@@ -274,7 +274,7 @@ const Dashboard = () => {
       return;
     }
 
-    const itemName = item.isFolder ? item.folderName : item.originalName;
+    const itemName = item.isFolder ? item.name : item.originalName;
     const itemType = item.isFolder ? 'folder' : 'file';
     
     // Show progress notification
@@ -420,8 +420,11 @@ const Dashboard = () => {
     try {
       console.log('Starting bulk delete for:', selectedFiles);
       
+      // Get the full items for bulk delete (needed to determine if folder or file)
+      const selectedItems = selectedFiles.map(fileId => files.find(f => f.id === fileId)).filter(Boolean);
+      
       // Use the new bulk delete API with progress tracking
-      const response = await fileAPI.bulkDeleteWithProgress(selectedFiles, (progress) => {
+      const response = await fileAPI.bulkDeleteWithProgress(selectedItems, (progress) => {
         updateNotification(notificationId, {
           message: `Deleting ${totalItems} item(s)... (${progress.current}/${progress.total})`,
           progress: { 
@@ -560,7 +563,7 @@ const Dashboard = () => {
 
   const openFolder = (folder) => {
     setCurrentFolderId(folder.id);
-    setFolderPath(prev => [...prev, { id: folder.id, name: folder.folderName }]);
+    setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
     fetchFiles(folder.id);
   };
 
@@ -594,7 +597,7 @@ const Dashboard = () => {
     // Filter by search query
     if (searchQuery) {
       filtered = filtered.filter(item => {
-        const name = item.isFolder ? item.folderName : item.originalName;
+        const name = item.isFolder ? item.name : item.originalName;
         return name.toLowerCase().includes(searchQuery.toLowerCase());
       });
     }
@@ -1155,7 +1158,7 @@ const Dashboard = () => {
                       
                       <div className="file-info">
                         <div className="file-name">
-                          {item.isFolder ? item.folderName : item.originalName}
+                          {item.isFolder ? item.name : item.originalName}
                           {!item.isFolder && item.totalVersions > 1 && (
                             <span className="version-badge" title={`${item.totalVersions} versions`}>
                               v{item.currentVersion}
